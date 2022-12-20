@@ -1,7 +1,7 @@
 GanLM is a sequence-to-sequence pre-training model for both language generation and understanding tasks.
 
 
-# Fine-tuning on Generation Task
+## Fine-tuning on Generation Task
 * Abstractive Text Summarization Xsum dataset
 ``` python
 set -ex
@@ -52,7 +52,7 @@ python train.py $DATA_DIR \
     --fp16 --fp16-init-scale 4 --ddp-backend=no_c10d \
     --rel-pos-buckets 32 --max-rel-pos 128 ${EXTRA_CMDS}
 ```
-# Fine-tuning on Understanding Task 
+## Fine-tuning on Understanding Task 
 * XNLI-translation-train-all
 ``` python
 DATA_DIR=${1}
@@ -108,7 +108,7 @@ GanLM is MIT-licensed.
 Please cite as:
 
 ``` bibtex
-@inproceedings{ganlm,
+@inproceedings{GanLM,
   title = {xxx},
   author = {xxx},
   booktitle = {xxx},

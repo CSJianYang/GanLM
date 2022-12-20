@@ -1,0 +1,76 @@
+description: ft
+target:
+  service: amlk8s
+  #name: a100-8x-wus2     
+  #vc: quantus
+  #name: v100-8x-eus-1
+  #vc: quantus
+  #name: itplabrr1cl1     
+  #vc: resrchvc
+  #name: itplabrr1cl1     
+  #vc: resrchvc
+  name: itpwus2v100cl    
+  vc: gcrprojvc1
+
+environment:
+  image: nvidia/20.09:v7.0.2
+  registry: shumingdocker.azurecr.io
+  setup:
+  - pip install --user -e fairseq/
+  - pip install --user -e infinibatch/
+  - pip install -U git+https://github.com/pltrdy/pyrouge --user 
+  #- git clone https://github.com/pltrdy/files2rouge.git && cd files2rouge && echo '/tmp/code/.files2rouge/' | python setup_rouge.py && python setup.py install --user
+  #- python -m nltk.downloader all > nltk.log
+  #- python -m nltk.downloader punkt
+  username: shumingdocker
+
+code:
+  local_dir: $CONFIG_DIR/../../../..
+
+storage:
+  msranlp:
+    storage_account_name: msranlp
+    container_name: unilm
+  output:
+    storage_account_name: yangjianunilm
+    container_name: unilm
+
+search:
+  job_template:
+    name: evaluate-wmt16-en2ro-{model_dir}/{checkpoint_name}-beam{beam}-lenpen{lenpen}-minlen{minlen}
+    sku: G1
+    sku_count: 1
+    command:
+    - bash ./shells/mt/wmt16-en-ro/evaluate_wmt16_en_ro.sh {model_dir} {checkpoint_name} {bsz} {beam} {lenpen} {minlen} {maxlen} {split} en ro
+    submit_args:
+      env:
+        NCCL_DEBUG: INFO
+        MKL_NUM_THREADS: 1
+        OMP_NUM_THREADS: 1
+  type: grid
+  max_trials: 500
+  params:
+    - name: model_dir
+      spec: discrete
+      values: ["/mnt/output/wmt16-en-ro/model/en2ro/ablation/0.1/v6/","/mnt/output/wmt16-en-ro/model/en2ro/ablation/0.2/v6/","/mnt/output/wmt16-en-ro/model/en2ro/ablation/0.3/v6/","/mnt/output/wmt16-en-ro/model/en2ro/ablation/0.4/v6/","/mnt/output/wmt16-en-ro/model/en2ro/ablation/0.5/v6/","/mnt/output/wmt16-en-ro/model/en2ro/ablation/0.6/v6/","/mnt/output/wmt16-en-ro/model/en2ro/ablation/0.7/v6/","/mnt/output/wmt16-en-ro/model/en2ro/ablation/0.8/v6/","/mnt/output/wmt16-en-ro/model/en2ro/ablation/0.9/v6/","/mnt/output/wmt16-en-ro/model/en2ro/ablation/0.1/transformer/","/mnt/output/wmt16-en-ro/model/en2ro/ablation/0.2/transformer/","/mnt/output/wmt16-en-ro/model/en2ro/ablation/0.3/transformer/","/mnt/output/wmt16-en-ro/model/en2ro/ablation/0.4/transformer/","/mnt/output/wmt16-en-ro/model/en2ro/ablation/0.5/transformer/","/mnt/output/wmt16-en-ro/model/en2ro/ablation/0.6/transformer/","/mnt/output/wmt16-en-ro/model/en2ro/ablation/0.7/transformer/","/mnt/output/wmt16-en-ro/model/en2ro/ablation/0.8/transformer/","/mnt/output/wmt16-en-ro/model/en2ro/ablation/0.9/transformer/"]
+    - name: checkpoint_name
+      spec: discrete
+      values: ["checkpoint8.pt"]
+    - name: beam
+      spec: discrete
+      values: [8]
+    - name: lenpen
+      spec: discrete
+      values: [1.0]
+    - name: minlen
+      spec: discrete
+      values: [0]
+    - name: maxlen
+      spec: discrete
+      values: [1024]
+    - name: split
+      spec: discrete
+      values: ["test"]
+    - name: bsz
+      spec: discrete
+      values: [16]

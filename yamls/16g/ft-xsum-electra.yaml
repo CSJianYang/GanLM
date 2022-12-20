@@ -1,0 +1,67 @@
+description: ft
+target:
+  service: amlk8s
+  name: a100-8x-wus2
+  vc: quantus
+  # name: itpwus2v100cl
+  # vc: gcrprojvc1
+
+environment:
+  image: nvidia/20.09:v7.0.2
+  registry: shumingdocker.azurecr.io
+  setup:
+  - pip install --user -e fairseq/
+  - pip install --user -e infinibatch/
+  - python -m nltk.downloader punkt
+  - echo "master_addr:" "$$MASTER_ADDR"
+  - echo "master_port:" $$MASTER_PORT
+  - echo "node_rank:" $$OMPI_COMM_WORLD_RANK
+  username: shumingdocker
+
+code:
+  local_dir: $CONFIG_DIR/..
+
+storage:
+  msranlp:
+    storage_account_name: msranlp
+    container_name: unilm
+  output:
+    storage_account_name: yangjianunilm
+    container_name: phillytools
+
+search:
+  job_template:
+    name: ft-{ckpt}-{lr}-bs{batch_size}-sd{seed}
+    sku: G8
+    sku_count: 1
+    command:
+    - export BERT_MODEL_PATH=/mnt/msranlp/shumma/exp/unilm_exp/{branch}/{ckpt}.pt
+    - export DATA_DIR=/mnt/msranlp/shumma/xsum/binary_data/en-unilm/
+    - export OUTPUT_PATH=/mnt/msranlp/shumma/exp/unilm_exp/{branch}/{ckpt}-ft/xsum/{lr}-bs{batch_size}-sd{seed}/
+    - export SRC_INPUT=/mnt/msranlp/shumma/xsum/raw_data/en-unilm/test.src
+    - export TGT_OUTPUT=/mnt/msranlp/shumma/xsum/raw_data/en/test.tgt
+    - bash scripts/finetune_xsum.sh $${BERT_MODEL_PATH} $${DATA_DIR} $${AMLT_OUTPUT_DIR} electra_base {batch_size} {lr} {seed} "--rel-pos-buckets 32 --max-rel-pos 128"
+    - bash scripts/evaluate_xsum.sh $$SRC_INPUT $$OUTPUT_PATH $${AMLT_OUTPUT_DIR}/checkpoint_best.pt $$DATA_DIR $$TGT_OUTPUT
+    submit_args:
+      env:
+        NCCL_DEBUG: INFO
+        MKL_NUM_THREADS: 1
+        OMP_NUM_THREADS: 1
+  type: grid
+  max_trials: 500
+  params:
+    - name: branch
+      spec: discrete
+      values: ["electra-baseline-init-wd"]
+    - name: ckpt
+      spec: discrete
+      values: ["checkpoint_0_125000"]
+    - name: seed
+      spec: discrete
+      values: [1]
+    - name: lr
+      spec: discrete
+      values: ["7e-5", "1e-4"]
+    - name: batch_size
+      spec: discrete
+      values: [4096]

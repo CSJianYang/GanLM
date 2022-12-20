@@ -1,0 +1,70 @@
+description: ft
+
+target:
+  service: amlk8s
+  name: a100-8x-wus2
+  vc: quantus
+  # name: itpwus2v100cl
+  # vc: gcrprojvc1
+
+environment:
+  image: nvidia/20.09:v7.0.2
+  registry: shumingdocker.azurecr.io
+  setup:
+  - pip install --user -e fairseq/
+  - pip install --user -e infinibatch/
+  - echo "master_addr:" "$$MASTER_ADDR"
+  - echo "master_port:" $$MASTER_PORT
+  - echo "node_rank:" $$OMPI_COMM_WORLD_RANK
+  username: shumingdocker
+
+code:
+  local_dir: $CONFIG_DIR/..
+
+storage:
+  msranlp:
+    storage_account_name: msranlp
+    container_name: unilm
+
+search:
+  job_template:
+    name: ft-{ckpt}-{lr}-x{num_epochs}-bs{batch_size}-wmu{warmup}-sd{seed}
+    sku: G1
+    sku_count: 1
+    command:
+    - export BERT_MODEL_PATH=/mnt/msranlp/shumma/exp/unilm_exp/{branch}/{ckpt}.pt
+    - export DATA_DIR=/mnt/msranlp/shaohanh/cu/combo/glue_data/MNLI
+    - export OUTPUT_PATH=/mnt/msranlp/shumma/exp/unilm_exp/{branch}/{ckpt}-ft
+    - bash scripts/finetune_glue.sh {task} $$BERT_MODEL_PATH $$DATA_DIR $$OUTPUT_PATH unilm_base {num_epochs} {warmup} {batch_size} {lr} {seed} "--task-moe --num-experts 2"
+    submit_args:
+      env:
+        NCCL_DEBUG: INFO
+        MKL_NUM_THREADS: 1
+        OMP_NUM_THREADS: 1
+  type: grid
+  max_trials: 500
+  params:
+    - name: branch
+      spec: discrete
+      values: ["unilm-moe"]
+    - name: task
+      spec: discrete
+      values: ["MNLI"]
+    - name: ckpt
+      spec: discrete
+      values: ["checkpoint_1_125000"]
+    - name: seed
+      spec: discrete
+      values: [1, 2, 3] # 2, 3, 4, 5
+    - name: lr
+      spec: discrete
+      values: ["1e-5", "2e-5", "3e-5", "4e-5"] #  "2e-5", "3e-5", "4e-5", "5e-5"
+    - name: warmup
+      spec: discrete
+      values: [10, 20]
+    - name: num_epochs
+      spec: discrete
+      values: [3]
+    - name: batch_size
+      spec: discrete
+      values: [32]

@@ -1,0 +1,55 @@
+description: A100LargePretrainT5
+
+target:
+  service: amlk8s
+  name: a100-8x-wus2
+  vc: quantus
+
+environment:
+  image: nvidia/20.09:v7.0.2
+  registry: shumingdocker.azurecr.io
+  setup:
+  - ibstat
+  - ulimit -n 40960
+  - pip install --user -e fairseq/
+  - pip install --user -e infinibatch/
+  - echo "master_addr:" "$$MASTER_ADDR"
+  - echo "master_port:" $$MASTER_PORT
+  - echo "node_rank:" $$OMPI_COMM_WORLD_RANK
+  username: shumingdocker
+  
+storage:
+  msranlp:
+    storage_account_name: msranlp
+    container_name: unilm
+  output:
+    storage_account_name: yangjianunilm
+    container_name: unilm
+
+code:
+  # local directory of the code. this will be uploaded to the server.
+  # $CONFIG_DIR is expanded to the directory of this config file
+  local_dir: $CONFIG_DIR/
+
+
+search:
+  job_template:
+    name: __pretrain_t5_lr{lr}_ws{warmup_steps}_wd{weight_decay}__
+    sku: G8
+    sku_count: 4
+    aml_mpirun:
+      communicator: OpenMpi
+    command:
+      - bash ./shells/pretrain_t5.sh 4 16 4 {lr} {warmup_steps} {weight_decay}
+  type: grid
+  max_trials: 500
+  params:
+    - name: lr
+      spec: discrete
+      values: [5e-4]
+    - name: warmup_steps
+      spec: discrete
+      values: [10000]
+    - name: weight_decay
+      spec: discrete
+      values: [0.01]

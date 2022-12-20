@@ -1,0 +1,74 @@
+description: ft
+target:
+  service: amlk8s
+  name: a100-40gb-wus3  
+  vc: quantus-prs
+  #name: a100-8x-wus2     
+  #vc: quantus
+  #name: v100-8x-eus-1
+  #vc: quantus
+  #name: itplabrr1cl1     
+  #vc: resrchvc
+  #name: itplabrr1cl1     
+  #vc: resrchvc
+
+environment:
+  image: nvidia/20.09:v7.0.2
+  registry: shumingdocker.azurecr.io
+  setup:
+  - pip install --user -e fairseq/
+  - pip install --user -e infinibatch/
+  - pip install -U git+https://github.com/pltrdy/pyrouge --user 
+  - git clone https://github.com/pltrdy/files2rouge.git && cd files2rouge && echo '/tmp/code/.files2rouge/' | python setup_rouge.py && python setup.py install --user
+  - python -m nltk.downloader all > nltk.log
+  #- python -m nltk.downloader punkt
+  username: shumingdocker
+code:
+  local_dir: $CONFIG_DIR/../../..
+
+storage:
+  msranlp:
+    storage_account_name: msranlp
+    container_name: unilm
+  output:
+    storage_account_name: yangjianunilm
+    container_name: unilm
+
+search:
+  job_template:
+    name: evaluate-{model_dir}/{checkpoint_name}-beam{beam}-lenpen{lenpen}-minlen{minlen}
+    sku: G1
+    command:
+    - bash ./shells/sum/cnn_dm/evaluate_cnn_dm.sh {model_dir} {checkpoint_name} {bsz} {beam} {lenpen} {minlen} {maxlen} {split}
+    submit_args:
+      env:
+        NCCL_DEBUG: INFO
+        MKL_NUM_THREADS: 1
+        OMP_NUM_THREADS: 1
+  type: grid
+  max_trials: 500
+  params:
+    - name: model_dir
+      spec: discrete
+      values: ["/mnt/output/cnn_dm/model/GanLM-large/lr3e-4-bsz8192-ws10000-wd0.05-dw10_-1_-1-iw1.0_-1_-1-g24d4/checkpoint_1_500000-ft/lr2e-5-uf4-bs2048-sd1-ws1000-wd0.01/both-1-1.0/"]
+    - name: checkpoint_name
+      spec: discrete
+      values: ["avg26_30.pt"]
+    - name: beam
+      spec: discrete
+      values: [4]
+    - name: lenpen
+      spec: discrete
+      values: [1.5]
+    - name: minlen
+      spec: discrete
+      values: [48]
+    - name: maxlen
+      spec: discrete
+      values: [160]
+    - name: split
+      spec: discrete
+      values: ["test"]
+    - name: bsz
+      spec: discrete
+      values: [8]

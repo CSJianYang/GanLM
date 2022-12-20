@@ -1,0 +1,6 @@
+/fairseq/examples/
+/fairseq/build/
+/amlt/
+/wmt16-en-ro/sample/
+/wmt16-en-ro/factored_sample/
+/wmt16-en-ro/r2l/

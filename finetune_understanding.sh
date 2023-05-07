@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -ex
 
-DATA_DIR=${1}
-PRETRAINED_MODEL_PATH=${2}
+DATA_DIR=${1}  # Required: the directory of the tokenized data file (spm: sentence piece)
+PRETRAINED_MODEL_PATH=${2}  # Required: the filepath of the pretrained model checkpoint
 OUTPUT_PATH=${3}
 ARCH=${4}
 UPDATE_FREQ=${5}
@@ -17,17 +17,44 @@ MAX_POSITIONS=${13}
 INITIALIZATION_STRATEGY=${14}
 SPLIT=${15}
 
+if [ ! "${OUTPUT_PATH}" ]; then
+    OUTPUT_PATH="./output/"
+fi
+if [ ! "${ARCH}" ]; then
+    ARCH="electra_encoder_decoder_v6_base"
+fi
 if [ ! "${UPDATE_FREQ}" ]; then
-    UPDATE_FREQ=1
+    UPDATE_FREQ=8
+fi
+if [ ! "${MAX_SENTENCES}" ]; then
+    MAX_SENTENCES=16
 fi
 if [ ! "${LR}" ]; then
-    LR=5e-6
+    LR="3e-5"
 fi
 if [ ! "${WARMUP_STEPS}" ]; then
     WARMUP_STEPS=1000
 fi
+if [ ! "${SEED}" ]; then
+    SEED=1
+fi
 if [ ! "${MAX_EPOCH}" ]; then
-    MAX_EPOCH=10
+    MAX_EPOCH=4
+fi
+if [ ! "${CLIP_NORM}" ]; then
+    CLIP_NORM=0.0
+fi
+if [ ! "${WEIGHT_DECAY}" ]; then
+    WEIGHT_DECAY=0.1
+fi
+if [ ! "${MAX_POSITIONS}" ]; then
+    MAX_POSITIONS=512
+fi
+if [ ! "${INITIALIZATION_STRATEGY}" ]; then
+    INITIALIZATION_STRATEGY="discriminator"
+fi
+if [ ! "${SPLIT}" ]; then
+    SPLIT="test"
 fi
 
 mkdir -p "${OUTPUT_PATH}"

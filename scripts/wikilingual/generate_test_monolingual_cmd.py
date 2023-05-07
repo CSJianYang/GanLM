@@ -11,12 +11,18 @@ mBART_LANGS = "en_XX es_XX pt_XX fr_XX de_DE ru_RU it_IT id_ID nl_XX ar_AR vi_VN
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--transformer-checkpoint', '-transformer-checkpoint', type=str, default="/mnt/input/mBART/WikiLingual/download-split/model/monolingual/transformer", help='output stream')
-    parser.add_argument('--mBART-checkpoint', '-mBART-checkpoint', type=str, default="/mnt/input/mBART/WikiLingual/download-split/model/monolingual/mBART", help='output stream')
+    parser.add_argument('--transformer-checkpoint', '-transformer-checkpoint', type=str,
+                        default="/mnt/input/mBART/WikiLingual/download-split/model/monolingual/transformer",
+                        help='output stream')
+    parser.add_argument('--mBART-checkpoint', '-mBART-checkpoint', type=str,
+                        default="/mnt/input/mBART/WikiLingual/download-split/model/monolingual/mBART",
+                        help='output stream')
     parser.add_argument('--transformer-output', '-transformer-output', type=str,
-                        default=r'/home/v-jiaya/mBART/mBART/submit_test_wikilingual_monolingual_transformer.yaml', help='output stream')
+                        default=r'/home/v-jiaya/mBART/mBART/submit_test_wikilingual_monolingual_transformer.yaml',
+                        help='output stream')
     parser.add_argument('--mBART-output', '-mBART-output', type=str,
-                        default=r'/home/v-jiaya/mBART/mBART/submit_test_wikilingual_monolingual_mBART.yaml', help='output stream')
+                        default=r'/home/v-jiaya/mBART/mBART/submit_test_wikilingual_monolingual_mBART.yaml',
+                        help='output stream')
     args = parser.parse_args()
     return args
 
@@ -68,7 +74,7 @@ jobs:"""
     max_len = 196
     checkpoint_dir = args.transformer_checkpoint
 
-    cmds  = heads
+    cmds = heads
     for i in range(len(LANGS)):
         checkpoint = "{}/{}/avg11_15.pt".format(checkpoint_dir, LANGS[i])
         checkpoint_name = checkpoint.split("model")[1].replace(".", "_").replace("/", "_")
@@ -77,13 +83,15 @@ jobs:"""
   sku: G1
   sku_count: 1
   command:
-    - bash ./shells/aml/multi-node/WikiLingual/test/test_aml.sh {} {} {} {} {} {} {} {}""".format(checkpoint.replace(".", "_"), LANGS[i], mBART_LANGS[i], LANGS[i], batch_size, beam, checkpoint, checkpoint_name, min_len, max_len)
+    - bash ./shells/aml/multi-node/WikiLingual/test/test_aml.sh {} {} {} {} {} {} {} {}""".format(
+            checkpoint.replace(".", "_"), LANGS[i], mBART_LANGS[i], LANGS[i], batch_size, beam, checkpoint,
+            checkpoint_name, min_len, max_len)
 
     print(cmds)
     with open(args.transformer_output, "w", encoding="utf-8") as w:
         w.write(cmds)
 
-    cmds  = heads
+    cmds = heads
     checkpoint_dir = args.mBART_checkpoint
     for i in range(len(LANGS)):
         checkpoint = "{}/{}/avg11_15.pt".format(checkpoint_dir, LANGS[i])
@@ -93,12 +101,10 @@ jobs:"""
   sku: G1
   sku_count: 1
   command:
-    - bash ./shells/aml/multi-node/WikiLingual/test/test_aml.sh {} {} {} {} {} {} {} {}""".format(checkpoint.replace(".", "_"), LANGS[i], mBART_LANGS[i], LANGS[i], batch_size, beam, checkpoint, checkpoint_name, min_len, max_len)
+    - bash ./shells/aml/multi-node/WikiLingual/test/test_aml.sh {} {} {} {} {} {} {} {}""".format(
+            checkpoint.replace(".", "_"), LANGS[i], mBART_LANGS[i], LANGS[i], batch_size, beam, checkpoint,
+            checkpoint_name, min_len, max_len)
 
     print(cmds)
     with open(args.mBART_output, "w", encoding="utf-8") as w:
         w.write(cmds)
-
-
-
-

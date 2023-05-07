@@ -42,8 +42,8 @@ from fairseq.logging import meters, metrics, progress_bar
 from fairseq.model_parallel.megatron_trainer import MegatronTrainer
 from fairseq.trainer import Trainer
 from omegaconf import DictConfig, OmegaConf
-multilingual_valid_losses = {}
 
+multilingual_valid_losses = {}
 
 
 def main(cfg: FairseqConfig) -> None:
@@ -57,7 +57,7 @@ def main(cfg: FairseqConfig) -> None:
         logging.config.dictConfig(OmegaConf.to_container(cfg.job_logging_cfg))
 
     assert (
-        cfg.dataset.max_tokens is not None or cfg.dataset.batch_size is not None
+            cfg.dataset.max_tokens is not None or cfg.dataset.batch_size is not None
     ), "Must specify batch size either with --max-tokens or --batch-size"
     metrics.reset()
 
@@ -241,7 +241,7 @@ def should_stop_early(cfg: DictConfig, valid_loss: float) -> bool:
 
 @metrics.aggregate("train")
 def train(
-    cfg: DictConfig, trainer: Trainer, task: tasks.FairseqTask, epoch_itr
+        cfg: DictConfig, trainer: Trainer, task: tasks.FairseqTask, epoch_itr
 ) -> Tuple[List[Optional[float]], bool]:
     """Train the model for one epoch and return validation losses."""
     # Initialize data iterator
@@ -293,7 +293,7 @@ def train(
     logger.info("Start iterating over samples")
     for i, samples in enumerate(progress):
         with metrics.aggregate("train_inner"), torch.autograd.profiler.record_function(
-            "train_step-%d" % i
+                "train_step-%d" % i
         ):
             log_output = trainer.train_step(samples)
 
@@ -340,12 +340,12 @@ def _flatten_config(cfg: DictConfig):
 
 
 def validate_and_save(
-    cfg: DictConfig,
-    trainer: Trainer,
-    task: tasks.FairseqTask,
-    epoch_itr,
-    valid_subsets: List[str],
-    end_of_epoch: bool,
+        cfg: DictConfig,
+        trainer: Trainer,
+        task: tasks.FairseqTask,
+        epoch_itr,
+        valid_subsets: List[str],
+        end_of_epoch: bool,
 ) -> Tuple[List[Optional[float]], bool]:
     num_updates = trainer.get_num_updates()
     max_update = cfg.optimization.max_update or math.inf
@@ -362,8 +362,8 @@ def validate_and_save(
 
     training_time_hours = trainer.cumulative_training_time() / (60 * 60)
     if (
-        cfg.optimization.stop_time_hours > 0
-        and training_time_hours > cfg.optimization.stop_time_hours
+            cfg.optimization.stop_time_hours > 0
+            and training_time_hours > cfg.optimization.stop_time_hours
     ):
         should_stop = True
         logger.info(
@@ -373,25 +373,26 @@ def validate_and_save(
         )
 
     do_save = (
-        (end_of_epoch and epoch_itr.epoch % cfg.checkpoint.save_interval == 0)
-        or should_stop
-        or (
-            cfg.checkpoint.save_interval_updates > 0
-            and num_updates > 0
-            and num_updates % cfg.checkpoint.save_interval_updates == 0
-            and num_updates >= cfg.dataset.validate_after_updates
-        )
-    ) and (epoch_itr.epoch >= cfg.checkpoint.start_save_epoch)
+                      (end_of_epoch and epoch_itr.epoch % cfg.checkpoint.save_interval == 0)
+                      or should_stop
+                      or (
+                              cfg.checkpoint.save_interval_updates > 0
+                              and num_updates > 0
+                              and num_updates % cfg.checkpoint.save_interval_updates == 0
+                              and num_updates >= cfg.dataset.validate_after_updates
+                      )
+              ) and (epoch_itr.epoch >= cfg.checkpoint.start_save_epoch)
     do_validate = (
-        (not end_of_epoch and do_save)  # validate during mid-epoch saves
-        or (end_of_epoch and epoch_itr.epoch % cfg.dataset.validate_interval == 0)
-        or should_stop
-        or (
-            cfg.dataset.validate_interval_updates > 0
-            and num_updates > 0
-            and num_updates % cfg.dataset.validate_interval_updates == 0
-        )
-    ) and not cfg.dataset.disable_validation and num_updates >= cfg.dataset.validate_after_updates and (epoch_itr.epoch >= cfg.checkpoint.start_validate_epoch)
+                          (not end_of_epoch and do_save)  # validate during mid-epoch saves
+                          or (end_of_epoch and epoch_itr.epoch % cfg.dataset.validate_interval == 0)
+                          or should_stop
+                          or (
+                                  cfg.dataset.validate_interval_updates > 0
+                                  and num_updates > 0
+                                  and num_updates % cfg.dataset.validate_interval_updates == 0
+                          )
+                  ) and not cfg.dataset.disable_validation and num_updates >= cfg.dataset.validate_after_updates and (
+                              epoch_itr.epoch >= cfg.checkpoint.start_validate_epoch)
 
     # Validate
     valid_losses = [None]
@@ -415,11 +416,11 @@ def get_training_stats(stats: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def validate(
-    cfg: DictConfig,
-    trainer: Trainer,
-    task: tasks.FairseqTask,
-    epoch_itr,
-    subsets: List[str],
+        cfg: DictConfig,
+        trainer: Trainer,
+        task: tasks.FairseqTask,
+        epoch_itr,
+        subsets: List[str],
 ) -> List[Optional[float]]:
     """Evaluate the model on the validation set(s) and return the losses."""
 
@@ -479,7 +480,6 @@ def validate(
         if hasattr(task, "post_validate"):
             task.post_validate(trainer.get_model(), stats, agg)
 
-
         if cfg.task._name == "xnli":
             if subset not in multilingual_valid_losses:
                 multilingual_valid_losses[subset] = [stats[cfg.checkpoint.best_checkpoint_metric]]
@@ -494,12 +494,13 @@ def validate(
             max_multilingual_valid_losses.append(max(multilingual_valid_losses[lg]))
         logger.info(cfg.task.eval_langs)
         logger.info(max_multilingual_valid_losses)
-        logger.info(f"Avg15: {round(float(sum(max_multilingual_valid_losses))/len(max_multilingual_valid_losses), 1)}")
+        logger.info(
+            f"Avg15: {round(float(sum(max_multilingual_valid_losses)) / len(max_multilingual_valid_losses), 1)}")
     return valid_losses
 
 
 def get_valid_stats(
-    cfg: DictConfig, trainer: Trainer, stats: Dict[str, Any]
+        cfg: DictConfig, trainer: Trainer, stats: Dict[str, Any]
 ) -> Dict[str, Any]:
     stats["num_updates"] = trainer.get_num_updates()
     if hasattr(checkpoint_utils.save_checkpoint, "best"):
@@ -513,7 +514,7 @@ def get_valid_stats(
 
 
 def cli_main(
-    modify_parser: Optional[Callable[[argparse.ArgumentParser], None]] = None
+        modify_parser: Optional[Callable[[argparse.ArgumentParser], None]] = None
 ) -> None:
     parser = options.get_training_parser()
     args = options.parse_args_and_arch(parser, modify_parser=modify_parser)

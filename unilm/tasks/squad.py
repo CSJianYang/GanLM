@@ -25,6 +25,7 @@ from fairseq.data.encoders.sentencepiece_bpe import SentencepieceBPE
 from dataclasses import dataclass, field
 from omegaconf import II, MISSING
 
+
 @dataclass
 class SquadConfig(FairseqDataclass):
     data: str = field(default=MISSING, metadata={"help": "path to data directory"})
@@ -40,6 +41,7 @@ class SquadConfig(FairseqDataclass):
         default=512,
         metadata={"help": "max tokens per example"},
     )
+
 
 @register_task('squad', dataclass=SquadConfig)
 class SQuADTask(FairseqTask):
@@ -61,7 +63,7 @@ class SQuADTask(FairseqTask):
             filename (str): the filename
         """
         dictionary = Dictionary.load(filename)
-        
+
         if extra_mask_tokens:
             dictionary.add_symbol("<mask>")
             for i in range(100):
@@ -104,7 +106,7 @@ class SQuADTask(FairseqTask):
             is_impossible = RawLabelDataset([int(f.is_impossible) for f in features])
         else:
             starts = ends = is_impossible = None
-        #sizes = np.array([len(f.input_ids) for f in features])
+        # sizes = np.array([len(f.input_ids) for f in features])
 
         '''
             Input format: <s> question here ? </s> Passage </s>
@@ -116,7 +118,7 @@ class SQuADTask(FairseqTask):
                     'src_tokens': RightPadDataset(
                         src_tokens,
                         pad_idx=self.dictionary.pad(),
-                    ),  
+                    ),
                     'src_lengths': NumelDataset(src_tokens, reduce=False),
                 },
                 'targets': {
@@ -153,7 +155,7 @@ class SQuADTask(FairseqTask):
             num_classes=2,
         )
         return model
-    
+
     def reduce_metrics(self, logging_outputs, criterion):
         super().reduce_metrics(logging_outputs, criterion)
         criterion.context_metrics(logging_outputs)
@@ -165,7 +167,7 @@ class SQuADTask(FairseqTask):
     @property
     def target_dictionary(self):
         return self.dictionary
-    
+
     def max_positions(self):
         return self.args.max_positions
 
@@ -181,7 +183,7 @@ class RawArrayDataset(FairseqDataset):
             try:
                 self._sizes = np.array([len(x) for x in self.dataset])
             except:
-                self._sizes =  np.array([1 for x in self.dataset])
+                self._sizes = np.array([1 for x in self.dataset])
 
     def __getitem__(self, index):
         return self.dataset[index]

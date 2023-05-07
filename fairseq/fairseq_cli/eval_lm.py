@@ -24,7 +24,6 @@ from fairseq.logging.meters import StopwatchMeter
 from fairseq.sequence_scorer import SequenceScorer
 from omegaconf import DictConfig
 
-
 logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
@@ -35,16 +34,16 @@ logger = logging.getLogger("fairseq_cli.eval_lm")
 
 
 def eval_lm(
-    models: List[fairseq.models.FairseqModel],
-    source_dictionary: fairseq.data.Dictionary,
-    batch_iterator: Iterable,
-    post_process: Optional[str] = None,
-    output_word_probs: bool = False,
-    output_word_stats: bool = False,
-    target_dictionary: Optional[fairseq.data.Dictionary] = None,
-    softmax_batch: int = 0,
-    remove_bos_token: bool = False,
-    device: Optional[torch.device] = None,
+        models: List[fairseq.models.FairseqModel],
+        source_dictionary: fairseq.data.Dictionary,
+        batch_iterator: Iterable,
+        post_process: Optional[str] = None,
+        output_word_probs: bool = False,
+        output_word_stats: bool = False,
+        target_dictionary: Optional[fairseq.data.Dictionary] = None,
+        softmax_batch: int = 0,
+        remove_bos_token: bool = False,
+        device: Optional[torch.device] = None,
 ):
     """
     Args:

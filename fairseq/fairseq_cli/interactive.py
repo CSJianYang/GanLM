@@ -25,7 +25,6 @@ from fairseq.dataclass.utils import convert_namespace_to_omegaconf
 from fairseq.token_generation_constraints import pack_constraints, unpack_constraints
 from fairseq_cli.generate import get_symbols_to_strip_from_output
 
-
 logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
@@ -33,7 +32,6 @@ logging.basicConfig(
     stream=sys.stdout,
 )
 logger = logging.getLogger("fairseq_cli.interactive")
-
 
 Batch = namedtuple("Batch", "ids src_tokens src_lengths constraints")
 Translation = namedtuple("Translation", "src_str hypos pos_scores alignments")
@@ -81,7 +79,8 @@ def make_batches(lines, cfg, task, max_positions, encode_fn):
         constraints_tensor = None
 
     if cfg.task.truncate_source:
-        tokens, lengths = task.get_truncated_interactive_tokens_and_lengths(cfg.task.max_source_positions - 10, lines, encode_fn)
+        tokens, lengths = task.get_truncated_interactive_tokens_and_lengths(cfg.task.max_source_positions - 10, lines,
+                                                                            encode_fn)
     else:
         tokens, lengths = task.get_interactive_tokens_and_lengths(lines, encode_fn)
 
@@ -123,11 +122,11 @@ def main(cfg: FairseqConfig):
         cfg.dataset.batch_size = 1
 
     assert (
-        not cfg.generation.sampling or cfg.generation.nbest == cfg.generation.beam
+            not cfg.generation.sampling or cfg.generation.nbest == cfg.generation.beam
     ), "--sampling requires --nbest to be equal to --beam"
     assert (
-        not cfg.dataset.batch_size
-        or cfg.dataset.batch_size <= cfg.interactive.buffer_size
+            not cfg.dataset.batch_size
+            or cfg.dataset.batch_size <= cfg.interactive.buffer_size
     ), "--batch-size cannot be larger than --buffer-size"
 
     logger.info(cfg)

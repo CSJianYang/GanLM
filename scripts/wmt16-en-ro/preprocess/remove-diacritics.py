@@ -2,12 +2,11 @@
 # -*- coding: utf-8 -*-
 # Author: Barry Haddow
 # Distributed under MIT license
-
-#
 # Remove Romanian diacritics. Assumes s-comma and t-comma are normalised
 
 import io
 import sys
+
 
 istream = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
 ostream = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')

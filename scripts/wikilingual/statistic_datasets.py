@@ -1,6 +1,7 @@
 import linecache
-DATA="/home/v-jiaya/unilm-moe/data/wikilingual/download-split/train_spm/"
-LANGS="ar cs de en es fr hi it id ja ko nl pt ru th tr vi zh".split()
+
+DATA = "/home/v-jiaya/unilm-moe/data/wikilingual/download-split/train_spm/"
+LANGS = "ar cs de en es fr hi it id ja ko nl pt ru th tr vi zh".split()
 for lg in LANGS:
     src_lines = linecache.getlines(f"{DATA}/train.{lg}_src")
     tgt_lines = linecache.getlines(f"{DATA}/train.{lg}_tgt")

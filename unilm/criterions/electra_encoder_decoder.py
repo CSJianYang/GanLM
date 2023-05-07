@@ -96,7 +96,8 @@ class ElectraEncoderDecoderLoss(FairseqCriterion):
         )
 
         discriminator_loss = discriminator_loss * sample_size / discriminator_sample_size
-        discriminator_weight = min(update_num // self.warmup_interval, self.cfg.discriminator_weight) if self.warmup_interval > 0 else self.cfg.discriminator_weight
+        discriminator_weight = min(update_num // self.warmup_interval,
+                                   self.cfg.discriminator_weight) if self.warmup_interval > 0 else self.cfg.discriminator_weight
         loss = generator_loss + discriminator_weight * discriminator_loss
         with torch.no_grad():
             positive = discriminator_logits[:, 1] >= discriminator_logits[:, 0]
@@ -121,12 +122,12 @@ class ElectraEncoderDecoderLoss(FairseqCriterion):
         }
         return loss, sample_size, logging_output
 
-
     def seq2seq_loss(self, model, sample, reduce):
         src_lengths = torch.LongTensor(
             [sample["src_tokens"][i].ne(self.padding_idx).long().sum() for i in range(sample["nsentences"])]
         )
-        logits = model(src_tokens=sample["src_tokens"], src_lengths=src_lengths, prev_output_tokens=sample["tgt_tokens"])[0]
+        logits = \
+        model(src_tokens=sample["src_tokens"], src_lengths=src_lengths, prev_output_tokens=sample["tgt_tokens"])[0]
         targets = sample["targets"]
         sample_size = targets.ne(self.padding_idx).int().sum().detach().tolist()
 

@@ -21,7 +21,6 @@ import numpy as np
 import six
 
 
-
 def whitespace_tokenize(text):
     """Runs basic whitespace cleaning and splitting on a piece of text."""
     text = text.strip()
@@ -30,6 +29,7 @@ def whitespace_tokenize(text):
     tokens = text.split()
     return tokens
 
+
 class SquadExample(object):
     """A single training/test example for simple sequence classification.
 
@@ -37,14 +37,14 @@ class SquadExample(object):
     """
 
     def __init__(self,
-                qas_id,
-                question_text,
-                doc_tokens,
-                orig_answer_text=None,
-                start_position=None,
-                end_position=None,
-                is_impossible=False,
-                answers=[]):
+                 qas_id,
+                 question_text,
+                 doc_tokens,
+                 orig_answer_text=None,
+                 start_position=None,
+                 end_position=None,
+                 is_impossible=False,
+                 answers=[]):
         self.qas_id = qas_id
         self.question_text = question_text
         self.doc_tokens = doc_tokens
@@ -61,7 +61,7 @@ class SquadExample(object):
         s = ""
         s += "qas_id: %s" % (str(self.qas_id))
         s += ", question_text: %s" % (
-                str(self.question_text))
+            str(self.question_text))
         s += ", doc_tokens: [%s]" % (" ".join(self.doc_tokens))
         if self.start_position:
             s += ", start_position: %d" % (self.start_position)
@@ -74,22 +74,23 @@ class SquadExample(object):
             s += ", answer_text: %s" % (' '.join(self.doc_tokens[self.start_position: self.end_position + 1]))
         return s
 
+
 class SquadFeature(object):
     """A single set of features of data."""
 
     def __init__(self,
-                unique_id,
-                example_index,
-                doc_span_index,
-                tokens,
-                token_to_orig_map,
-                token_is_max_context,
-                input_ids,
-                p_mask,
-                doc_offset,
-                start_position=None,
-                end_position=None,
-                is_impossible=None):
+                 unique_id,
+                 example_index,
+                 doc_span_index,
+                 tokens,
+                 token_to_orig_map,
+                 token_is_max_context,
+                 input_ids,
+                 p_mask,
+                 doc_offset,
+                 start_position=None,
+                 end_position=None,
+                 is_impossible=None):
         self.unique_id = unique_id
         self.example_index = example_index
         self.doc_span_index = doc_span_index
@@ -143,7 +144,7 @@ def read_squad_examples(input_file, is_training, version_2_with_negative):
                 if is_training:
                     if (len(qa["answers"]) != 1) and (not is_impossible):
                         raise ValueError(
-                                "For training, each question should have exactly 1 answer.")
+                            "For training, each question should have exactly 1 answer.")
                     if not is_impossible:
                         answer = qa["answers"][0]
                         orig_answer_text = answer["text"]
@@ -158,12 +159,12 @@ def read_squad_examples(input_file, is_training, version_2_with_negative):
                         # Note that this means for training mode, every example is NOT
                         # guaranteed to be preserved.
                         actual_text = " ".join(
-                                doc_tokens[start_position:(end_position + 1)])
+                            doc_tokens[start_position:(end_position + 1)])
                         cleaned_answer_text = " ".join(
-                                whitespace_tokenize(orig_answer_text))
+                            whitespace_tokenize(orig_answer_text))
                         if actual_text.find(cleaned_answer_text) == -1:
                             print("Could not find answer: '%s' vs. '%s'",
-                                    actual_text, cleaned_answer_text)
+                                  actual_text, cleaned_answer_text)
                             continue
                     else:
                         start_position = -1
@@ -173,19 +174,20 @@ def read_squad_examples(input_file, is_training, version_2_with_negative):
                     answers = qa["answers"]
 
                 example = SquadExample(
-                        qas_id=qas_id,
-                        question_text=question_text,
-                        doc_tokens=doc_tokens,
-                        orig_answer_text=orig_answer_text,
-                        start_position=start_position,
-                        end_position=end_position,
-                        is_impossible=is_impossible,
-                        answers=answers)
+                    qas_id=qas_id,
+                    question_text=question_text,
+                    doc_tokens=doc_tokens,
+                    orig_answer_text=orig_answer_text,
+                    start_position=start_position,
+                    end_position=end_position,
+                    is_impossible=is_impossible,
+                    answers=answers)
                 examples.append(example)
     return examples
 
+
 def _improve_answer_span(doc_tokens, input_start, input_end, tokenizer,
-                                                 orig_answer_text):
+                         orig_answer_text):
     """Returns tokenized answer spans that better match the annotated answer."""
 
     # The SQuAD annotations are character based. We first project them to
@@ -257,8 +259,9 @@ def _check_is_max_context(doc_spans, cur_span_index, position):
 
     return cur_span_index == best_span_index
 
+
 def squad_convert_examples_to_features(examples, tokenizer, max_seq_length, doc_stride,
-                                       max_query_length, is_training, 
+                                       max_query_length, is_training,
                                        cls_token='[CLS]', sep_token='[SEP]', additional_seq=True):
     features = []
     unique_id = 1000000000
@@ -288,8 +291,8 @@ def squad_convert_examples_to_features(examples, tokenizer, max_seq_length, doc_
             else:
                 tok_end_position = len(all_doc_tokens) - 1
             (tok_start_position, tok_end_position) = _improve_answer_span(
-                    all_doc_tokens, tok_start_position, tok_end_position, tokenizer,
-                    example.orig_answer_text)
+                all_doc_tokens, tok_start_position, tok_end_position, tokenizer,
+                example.orig_answer_text)
 
         max_tokens_for_doc = max_seq_length - len(query_tokens) - 3
 
@@ -297,7 +300,7 @@ def squad_convert_examples_to_features(examples, tokenizer, max_seq_length, doc_
         # To deal with this we do a sliding window approach, where we take chunks
         # of the up to our max length with a stride of `doc_stride`.
         _DocSpan = collections.namedtuple(  # pylint: disable=invalid-name
-                "DocSpan", ["start", "length"])
+            "DocSpan", ["start", "length"])
         doc_spans = []
         start_offset = 0
         while start_offset < len(all_doc_tokens):
@@ -363,11 +366,11 @@ def squad_convert_examples_to_features(examples, tokenizer, max_seq_length, doc_
                 print("example_index: %s" % (example_index))
                 print("doc_span_index: %s" % (doc_span_index))
                 print("tokens: %s" % " ".join(
-                        [x for x in tokens]))
+                    [x for x in tokens]))
                 print("token_to_orig_map: %s" % " ".join(
-                        ["%d:%d" % (x, y) for (x, y) in six.iteritems(token_to_orig_map)]))
+                    ["%d:%d" % (x, y) for (x, y) in six.iteritems(token_to_orig_map)]))
                 print("token_is_max_context: %s" % " ".join([
-                        "%d:%s" % (x, y) for (x, y) in six.iteritems(token_is_max_context)
+                    "%d:%s" % (x, y) for (x, y) in six.iteritems(token_is_max_context)
                 ]))
                 print("input_ids: %s" % " ".join([str(x) for x in input_ids]))
                 if is_training and example.is_impossible:
@@ -379,18 +382,18 @@ def squad_convert_examples_to_features(examples, tokenizer, max_seq_length, doc_
                     print("answer: %s" % (answer_text))
 
             feature = SquadFeature(
-                    unique_id=unique_id,
-                    example_index=example_index,
-                    doc_span_index=doc_span_index,
-                    tokens=tokens,
-                    token_to_orig_map=token_to_orig_map,
-                    token_is_max_context=token_is_max_context,
-                    input_ids=input_ids,
-                    p_mask=p_mask,
-                    doc_offset=doc_offset,
-                    start_position=start_position,
-                    end_position=end_position,
-                    is_impossible=example.is_impossible)
+                unique_id=unique_id,
+                example_index=example_index,
+                doc_span_index=doc_span_index,
+                tokens=tokens,
+                token_to_orig_map=token_to_orig_map,
+                token_is_max_context=token_is_max_context,
+                input_ids=input_ids,
+                p_mask=p_mask,
+                doc_offset=doc_offset,
+                start_position=start_position,
+                end_position=end_position,
+                is_impossible=example.is_impossible)
             features.append(feature)
             unique_id += 1
     return features

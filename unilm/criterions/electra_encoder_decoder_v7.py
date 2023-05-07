@@ -76,7 +76,6 @@ def label_smoothed_nll_loss(lprobs, target, epsilon, ignore_index=None, reduce=T
     return loss, nll_loss
 
 
-
 @register_criterion("electra_encoder_decoder_v7", dataclass=Electrav7Config)
 class ElectraEncoderDecoderv7Loss(FairseqCriterion):
     """
@@ -85,7 +84,7 @@ class ElectraEncoderDecoderv7Loss(FairseqCriterion):
 
     def __init__(self, cfg, task):
         super().__init__(task)
-        #self.sentence_avg = False
+        # self.sentence_avg = False
         self.tpu = cfg.tpu
         self.eps = cfg.label_smoothing
         self.ignore_prefix_size = cfg.ignore_prefix_size
@@ -93,10 +92,9 @@ class ElectraEncoderDecoderv7Loss(FairseqCriterion):
         self.mask_idx = task.mask_idx
         self.eos_idx = task.dictionary.eos()
         self.mask_span_idx = task.mask_idx + 1
-        self.discriminator_warmup_interval = cfg.discriminator_warmup_steps / cfg.discriminator_weight if cfg.discriminator_weight !=0 else -1
-        self.inconsistency_warmup_interval = cfg.inconsistency_warmup_steps / cfg.inconsistency_weight if cfg.inconsistency_weight !=0 else -1
+        self.discriminator_warmup_interval = cfg.discriminator_warmup_steps / cfg.discriminator_weight if cfg.discriminator_weight != 0 else -1
+        self.inconsistency_warmup_interval = cfg.inconsistency_warmup_steps / cfg.inconsistency_weight if cfg.inconsistency_weight != 0 else -1
         self.task_name = task.cfg._name
-
 
     def get_loss_weight(self, update_num, warmup_interal, weight, start_warmup_steps, return_float=True):
         if update_num < start_warmup_steps:
@@ -109,17 +107,16 @@ class ElectraEncoderDecoderv7Loss(FairseqCriterion):
         else:
             return min(update_num // warmup_interal, weight) if warmup_interal > 0 else weight
 
-
     def get_lprobs_and_target(self, model, net_output, sample):
         lprobs = model.get_normalized_probs(net_output, log_probs=True)
         target = model.get_targets(sample, net_output)
         if self.ignore_prefix_size > 0:
             if getattr(lprobs, "batch_first", False):
-                lprobs = lprobs[:, self.ignore_prefix_size :, :].contiguous()
-                target = target[:, self.ignore_prefix_size :].contiguous()
+                lprobs = lprobs[:, self.ignore_prefix_size:, :].contiguous()
+                target = target[:, self.ignore_prefix_size:].contiguous()
             else:
-                lprobs = lprobs[self.ignore_prefix_size :, :, :].contiguous()
-                target = target[self.ignore_prefix_size :, :].contiguous()
+                lprobs = lprobs[self.ignore_prefix_size:, :, :].contiguous()
+                target = target[self.ignore_prefix_size:, :].contiguous()
         return lprobs.view(-1, lprobs.size(-1)), target.view(-1)
 
     def compute_loss(self, model, net_output, sample, reduce=True):
@@ -133,12 +130,13 @@ class ElectraEncoderDecoderv7Loss(FairseqCriterion):
         )
         return loss, nll_loss
 
-
     def seq2seq_loss(self, model, sample, reduce, update_num=-1):
         src_lengths = sample["src_lengths"]
         targets = sample["targets"]
         masked_tokens = targets.le(self.mask_idx - 1) & targets.ne(self.padding_idx)
-        decoder_out = model(src_tokens=sample["src_tokens"], src_lengths=src_lengths, prev_output_tokens=sample["tgt_tokens"], masked_tokens=masked_tokens, targets=sample["targets"], features_only=False)
+        decoder_out = model(src_tokens=sample["src_tokens"], src_lengths=src_lengths,
+                            prev_output_tokens=sample["tgt_tokens"], masked_tokens=masked_tokens,
+                            targets=sample["targets"], features_only=False)
         sample_size = targets.ne(self.padding_idx).int().sum().detach().tolist()
 
         generator_logits = decoder_out["generator_out"][0]
@@ -152,8 +150,14 @@ class ElectraEncoderDecoderv7Loss(FairseqCriterion):
         else:
             generator_loss, _ = self.compute_loss(model, decoder_out['generator_out'], sample, reduce=reduce)
 
-        discriminator_weight = self.get_loss_weight(update_num, self.discriminator_warmup_interval, self.cfg.discriminator_weight, start_warmup_steps=self.cfg.discriminator_start_warmup_steps, return_float=True)
-        inconsistency_weight = self.get_loss_weight(update_num, self.inconsistency_warmup_interval, self.cfg.inconsistency_weight, start_warmup_steps=self.cfg.inconsistency_start_warmup_steps, return_float=True)
+        discriminator_weight = self.get_loss_weight(update_num, self.discriminator_warmup_interval,
+                                                    self.cfg.discriminator_weight,
+                                                    start_warmup_steps=self.cfg.discriminator_start_warmup_steps,
+                                                    return_float=True)
+        inconsistency_weight = self.get_loss_weight(update_num, self.inconsistency_warmup_interval,
+                                                    self.cfg.inconsistency_weight,
+                                                    start_warmup_steps=self.cfg.inconsistency_start_warmup_steps,
+                                                    return_float=True)
 
         discriminator_logits = decoder_out["discriminator_out"][0]
         input_tokens = decoder_out["input_tokens"]
@@ -198,13 +202,18 @@ class ElectraEncoderDecoderv7Loss(FairseqCriterion):
         #
         if inconsistency_weight > 0:
             # predicted_tokens != target_tokens && predict original token
-            non_pad_mask_tokens = non_pad_tokens & sample["non_last_token_tgt"].ne(self.padding_idx) & input_tokens.le(self.mask_idx - 1)
+            non_pad_mask_tokens = non_pad_tokens & sample["non_last_token_tgt"].ne(self.padding_idx) & input_tokens.le(
+                self.mask_idx - 1)
             discriminator_predicted_targets = discriminator_logits.max(dim=-1)[1]
             inconsistency_index = (discriminator_predicted_targets != targets) & non_pad_mask_tokens
             inconsistency_ntokens = inconsistency_index.sum()
             inconsistency_tgt_tokens = sample["tgt_tokens"].clone()
-            inconsistency_tgt_tokens[:, 1:][inconsistency_index[:, :-1]] = discriminator_predicted_targets[inconsistency_index]
-            inconsistency_decoder_out = model.decoder(encoder_out=decoder_out["encoder_out"], prev_output_tokens=inconsistency_tgt_tokens, masked_tokens=masked_tokens, targets=sample["targets"], features_only=True)
+            inconsistency_tgt_tokens[:, 1:][inconsistency_index[:, :-1]] = discriminator_predicted_targets[
+                inconsistency_index]
+            inconsistency_decoder_out = model.decoder(encoder_out=decoder_out["encoder_out"],
+                                                      prev_output_tokens=inconsistency_tgt_tokens,
+                                                      masked_tokens=masked_tokens, targets=sample["targets"],
+                                                      features_only=True)
             inconsistency_generator_logits = inconsistency_decoder_out[0]
             if self.task_name == "pretraining":
                 inconsistency_generator_loss = modules.cross_entropy(
@@ -214,7 +223,8 @@ class ElectraEncoderDecoderv7Loss(FairseqCriterion):
                     ignore_index=self.padding_idx,
                 )
             else:
-                inconsistency_generator_loss, _ = self.compute_loss(model, inconsistency_decoder_out, sample, reduce=reduce)
+                inconsistency_generator_loss, _ = self.compute_loss(model, inconsistency_decoder_out, sample,
+                                                                    reduce=reduce)
         else:
             inconsistency_ntokens = 0
             negative_inconsistency_ntokens = 0
@@ -239,7 +249,6 @@ class ElectraEncoderDecoderv7Loss(FairseqCriterion):
             "inconsistency_ntokens": inconsistency_ntokens,
         }
         return loss, sample_size, logging_output
-
 
     def forward(self, model, sample, reduce=True, epoch=-1, update_num=-1):
         """Compute the loss for the given sample.
@@ -294,7 +303,8 @@ class ElectraEncoderDecoderv7Loss(FairseqCriterion):
         if "discriminator_loss" in logging_outputs[0] and "generator_loss" in logging_outputs[0]:
             generator_loss_sum = sum(log.get("generator_loss", 0) for log in logging_outputs)
             discriminator_loss_sum = sum(log.get("discriminator_loss", 0) for log in logging_outputs)
-            inconsistency_generator_loss_sum = sum(log.get("inconsistency_generator_loss", 0) for log in logging_outputs)
+            inconsistency_generator_loss_sum = sum(
+                log.get("inconsistency_generator_loss", 0) for log in logging_outputs)
             tp = sum(log.get("tp", 0) for log in logging_outputs)
             fp = sum(log.get("fp", 0) for log in logging_outputs)
             tn = sum(log.get("tn", 0) for log in logging_outputs)
@@ -311,7 +321,8 @@ class ElectraEncoderDecoderv7Loss(FairseqCriterion):
                 "discriminator_loss", discriminator_loss_sum / sample_size / math.log(2), sample_size, round=3
             )
             metrics.log_scalar(
-                "inconsistency_generator_loss", inconsistency_generator_loss_sum / sample_size / math.log(2), sample_size, round=3
+                "inconsistency_generator_loss", inconsistency_generator_loss_sum / sample_size / math.log(2),
+                sample_size, round=3
             )
             metrics.log_scalar(
                 "generator_loss", generator_loss_sum / sample_size / math.log(2), sample_size, round=3

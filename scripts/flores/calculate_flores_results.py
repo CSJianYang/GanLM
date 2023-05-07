@@ -4,6 +4,7 @@ import xlrd
 import os
 import logging
 import sys
+
 logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
@@ -12,12 +13,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 TOTAL_DIRECTION = 102 * 102 - 102
+
+
 def mapping(languages: str) -> dict:
     return dict(
         tuple(pair.split(":"))
         for pair in languages.strip().replace("\n", "").split(",")
     )
-LANGS="af,am,ar,as,ast,az,be,bn,bs,bg,ca,ceb,cs,ku,cy,da,de,el,en,et,fa,fi,fr,ff,ga,gl,gu,ha,he,hi,hr,hu,hy,ig,id,is,it,jv,ja,kam,kn,ka,kk,kea,km,ky,ko,lo,lv,ln,lt,lb,lg,luo,ml,mr,mk,mt,mn,mi,ms,my,nl,no,ne,ns,ny,oc,om,or,pa,pl,pt,ps,ro,ru,sk,sl,sn,sd,so,es,sr,sv,sw,ta,te,tg,tl,th,tr,uk,umb,ur,uz,vi,wo,xh,yo,zh,zt,zu".split(",")
+
+
+LANGS = "af,am,ar,as,ast,az,be,bn,bs,bg,ca,ceb,cs,ku,cy,da,de,el,en,et,fa,fi,fr,ff,ga,gl,gu,ha,he,hi,hr,hu,hy,ig,id," \
+        "is,it,jv,ja,kam,kn,ka,kk,kea,km,ky,ko,lo,lv,ln,lt,lb,lg,luo,ml,mr,mk,mt,mn,mi,ms,my,nl,no,ne,ns,ny,oc,om,or," \
+        "pa,pl,pt,ps,ro,ru,sk,sl,sn,sd,so,es,sr,sv,sw,ta,te,tg,tl,th,tr,uk,umb,ur,uz,vi,wo,xh,yo,zh,zt,zu".split(",")
 
 
 def parse_args():
@@ -53,7 +60,7 @@ def _lang_pair(src, tgt):
 
 
 def read_excel(filename):
-    #m2m_results = []
+    # m2m_results = []
     m2m_x2x = {}
     workbook = xlrd.open_workbook(filename)
     worksheet = workbook.sheets()[0]
@@ -65,9 +72,9 @@ def read_excel(filename):
     for i in range(1, nrows):
         for j in range(1, ncols):
             if i != j:
-                #m2m_results.append(float(worksheet[i][j].value))
-                m2m_x2x[_lang_pair(M2M_LANGS[i-1], M2M_LANGS[j-1])] = float(worksheet[i][j].value)
-    #add ku lang
+                # m2m_results.append(float(worksheet[i][j].value))
+                m2m_x2x[_lang_pair(M2M_LANGS[i - 1], M2M_LANGS[j - 1])] = float(worksheet[i][j].value)
+    # add ku lang
     omitted_lang = "ku"
     if omitted_lang not in M2M_LANGS:
         for lang in M2M_LANGS:
@@ -100,16 +107,15 @@ def calculate_avg_score(x2x, src=None, tgt=None, model_name="m2m"):
         assert len(results) == 101, "{}".format(len(results))
         print("{}: x->{}: {:.2f}".format(model_name, tgt, avg))
     else:
-        avg = sum(x2x.values())/len(x2x)
+        avg = sum(x2x.values()) / len(x2x)
         print("{}: all: {:.2f}".format(model_name, avg))
     return avg
-
 
 
 if __name__ == "__main__":
     args = parse_args()
 
-    #m2m_x2x = read_excel("/home/v-jiaya/SharedTask/m2m.xls")
+    # m2m_x2x = read_excel("/home/v-jiaya/SharedTask/m2m.xls")
     # m2m_x2x = read_excel("/mnt/input/SharedTask/m2m_175M.xls")
     # calculate_avg_score(m2m_x2x, src="en")
     # calculate_avg_score(m2m_x2x, tgt="en")
@@ -125,9 +131,9 @@ if __name__ == "__main__":
     results = []
     checkpoint_name = args.checkpoint_name
     print(checkpoint_name)
-    #checkpoint_name = "/mnt/input/SharedTask/thunder/large_track/data/model/deltalm/FULL-v0/deltalm/A100/lr1e-4/checkpoint7.pt"
-    #checkpoint_name = "/mnt/input/SharedTask/thunder/large_track/data/model/deltalm/FULL-v0/deltalm/A100/lr1e-4-36L-12L/checkpoint3.pt"
-    #checkpoint_name = "/mnt/input/SharedTask/thunder/large_track/data/model/deltalm/FULL-v1/lr1e-4-deltalm-postnorm-64GPU/checkpoint30.pt"
+    # checkpoint_name = "/mnt/input/SharedTask/thunder/large_track/data/model/deltalm/FULL-v0/deltalm/A100/lr1e-4/checkpoint7.pt"
+    # checkpoint_name = "/mnt/input/SharedTask/thunder/large_track/data/model/deltalm/FULL-v0/deltalm/A100/lr1e-4-36L-12L/checkpoint3.pt"
+    # checkpoint_name = "/mnt/input/SharedTask/thunder/large_track/data/model/deltalm/FULL-v1/lr1e-4-deltalm-postnorm-64GPU/checkpoint30.pt"
     for i, src in enumerate(LANGS):
         results.append([])
         for j, tgt in enumerate(LANGS):
@@ -138,7 +144,7 @@ if __name__ == "__main__":
                         result_lines = r.readlines()
                         for i in range(len(result_lines) - 1, -1, -1):
                             if checkpoint_name.replace("//", "/") in result_lines[i].replace("//", "/"):
-                                last_line = result_lines[i + 1] # read the latest results
+                                last_line = result_lines[i + 1]  # read the latest results
                                 if 'BLEU+case.mixed' in last_line:
                                     score = float(last_line.split()[2])
                                     x2x["{}->{}".format(src, tgt)] = score
@@ -147,9 +153,9 @@ if __name__ == "__main__":
                                 else:
                                     print(os.path.join(args.log, "{}-{}.BLEU".format(src, tgt)))
                 except:
-                        logger.info("Can not find {}".format(os.path.join(args.log, "{}-{}.BLEU".format(src, tgt))))
-                        x2x["{}->{}".format(src, tgt)] = 0
-                        results[-1].append(0)
+                    logger.info("Can not find {}".format(os.path.join(args.log, "{}-{}.BLEU".format(src, tgt))))
+                    x2x["{}->{}".format(src, tgt)] = 0
+                    results[-1].append(0)
             else:
                 results[-1].append(0)
             assert len(results[-1]) == j + 1, f"{src}-{tgt} | {results[-1]}"
@@ -160,17 +166,10 @@ if __name__ == "__main__":
     x2y_results = calculate_avg_score(x2x, src="x", tgt="y", model_name="our")
     avg_results = calculate_avg_score(x2x, model_name="our")
 
-
     with open("{}/model.BLEU".format(args.result), "w", encoding="utf-8") as w:
         w.write("{}\n".format(checkpoint_name))
-        w.write("x->e: {} | e->x: {} | x->y: {} | avg: {}\n".format(round(x2e_results, 2), round(e2x_results, 2), round(x2y_results, 2), round(avg_results, 2)))
+        w.write("x->e: {} | e->x: {} | x->y: {} | avg: {}\n".format(round(x2e_results, 2), round(e2x_results, 2),
+                                                                    round(x2y_results, 2), round(avg_results, 2)))
 
     name = checkpoint_name.replace("/", "_").replace(".", "_") + "_direct"
     create_excel(results, name=name, path=args.result)
-
-
-
-
-
-
-

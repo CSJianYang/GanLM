@@ -38,9 +38,11 @@ from omegaconf import II
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class GlueConfig(SentencePredictionConfig):
     required_batch_size_multiple: int = II("dataset.required_batch_size_multiple")
+
 
 @register_task("glue", dataclass=GlueConfig)
 class GlueTask(SentencePredictionTask):
@@ -59,7 +61,7 @@ class GlueTask(SentencePredictionTask):
             filename (str): the filename
         """
         dictionary = Dictionary.load(filename)
-        
+
         if extra_mask_tokens:
             dictionary.add_symbol("<mask>")
             for i in range(100):
@@ -68,7 +70,7 @@ class GlueTask(SentencePredictionTask):
         dictionary.pad_to_multiple_(required_batch_size_multiple)
 
         return dictionary
-    
+
     @classmethod
     def setup_task(cls, cfg, **kwargs):
         assert cfg.num_classes > 0, "Must set task.num_classes"
@@ -90,7 +92,6 @@ class GlueTask(SentencePredictionTask):
         else:
             label_dict = data_dict
         return cls(cfg, data_dict, label_dict)
-
 
     def load_dataset(self, split, combine=False, **kwargs):
         """Load a given dataset split (e.g., train, valid, test)."""
@@ -181,11 +182,10 @@ class GlueTask(SentencePredictionTask):
         else:
             label_path = "{0}.label".format(get_path("label", split))
             if os.path.exists(label_path):
-
                 def parse_regression_target(i, line):
                     values = line.split()
                     assert (
-                        len(values) == self.cfg.num_classes
+                            len(values) == self.cfg.num_classes
                     ), f'expected num_classes={self.cfg.num_classes} regression target values on line {i}, found: "{line}"'
                     return [float(x) for x in values]
 

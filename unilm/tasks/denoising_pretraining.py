@@ -152,11 +152,9 @@ class DenoisingPretrainingConfig(FairseqDataclass):
     )
     mask_length: str = field(
         default="span-poisson",
-        #choices=["subword", "word", "span-poisson"],
+        # choices=["subword", "word", "span-poisson"],
         metadata={"help": "average span length for masking"},
     )
-
-
 
 
 @register_task("denoising_pretraining", dataclass=DenoisingPretrainingConfig)

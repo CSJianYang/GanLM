@@ -17,7 +17,6 @@ from fairseq.logging import metrics, progress_bar
 from fairseq.utils import reset_logging
 from omegaconf import DictConfig
 
-
 logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
@@ -36,7 +35,7 @@ def main(cfg: DictConfig, override_args=None):
     reset_logging()
 
     assert (
-        cfg.dataset.max_tokens is not None or cfg.dataset.batch_size is not None
+            cfg.dataset.max_tokens is not None or cfg.dataset.batch_size is not None
     ), "Must specify batch size either with --max-tokens or --batch-size"
 
     use_fp16 = cfg.common.fp16

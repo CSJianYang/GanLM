@@ -14,6 +14,7 @@ from fairseq.criterions import FairseqCriterion, register_criterion
 from fairseq.dataclass import FairseqDataclass
 from unilm.criterions.unilm import UniLmConfig
 
+
 @dataclass
 class ElectraConfig(UniLmConfig):
     mlm_only: bool = field(
@@ -64,7 +65,7 @@ class ElectraLoss(FairseqCriterion):
         generator_targets = targets[targets.ne(self.padding_idx)]
         src_tokens = sample["src_tokens"].clone()
         src_tokens[masked_tokens] = generator_targets
-        discriminator_targets = src_tokens.eq(input_tokens).long() 
+        discriminator_targets = src_tokens.eq(input_tokens).long()
 
         non_pad_tokens = sample["src_tokens"].ne(self.padding_idx)
         discriminator_logits = discriminator_logits[non_pad_tokens]
@@ -114,7 +115,7 @@ class ElectraLoss(FairseqCriterion):
             "fn": fn.data,
         }
         return loss, sample_size, logging_output
-    
+
     def seq2seq_loss(self, model, sample, reduce):
         features = model(src_tokens=sample["src_tokens"], tgt_tokens=sample["tgt_tokens"])[0]
         features = features[:, sample["src_tokens"].size(1):, :]
@@ -155,7 +156,7 @@ class ElectraLoss(FairseqCriterion):
             loss += mlm_loss
             sample_size = mlm_sample_size
             logging_outputs.update(mlm_logging_output)
-        
+
         if "seq2seq" in sample and not self.cfg.mlm_only:
             seq2seq_loss, seq2seq_sample_loss, seq2seq_logging_output = self.seq2seq_loss(
                 model, sample["seq2seq"], reduce=reduce
@@ -169,7 +170,7 @@ class ElectraLoss(FairseqCriterion):
             else:
                 logging_outputs.update(seq2seq_logging_output)
                 loss, sample_size = seq2seq_loss, seq2seq_sample_size
-        
+
         return loss, sample_size, logging_outputs
 
     @staticmethod
@@ -209,7 +210,8 @@ class ElectraLoss(FairseqCriterion):
                 "generator_loss", generator_loss_sum / sample_size / math.log(2), sample_size, round=3
             )
             metrics.log_scalar(
-                "discriminator_loss", discriminator_loss_sum / discriminator_sample_size / math.log(2), discriminator_sample_size, round=3
+                "discriminator_loss", discriminator_loss_sum / discriminator_sample_size / math.log(2),
+                discriminator_sample_size, round=3
             )
             metrics.log_scalar(
                 "replace_acc", replace_acc, tn + fp, round=4

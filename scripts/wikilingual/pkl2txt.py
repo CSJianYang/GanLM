@@ -5,12 +5,14 @@ import sys
 import pickle
 import random
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--input', '-input', type=str,
-                        default=r'/home/v-jiaya/mBART/data/WikiLingual/download/WikiLingua/indonesian.pkl', help='input stream')
+                        default=r'/home/v-jiaya/mBART/data/WikiLingual/download/WikiLingua/indonesian.pkl',
+                        help='input stream')
     parser.add_argument('--output', '-output', type=str,
-                        default=r'/home/v-jiaya/mBART/data/WikiLingual/download/raw/',  help='output stream')
+                        default=r'/home/v-jiaya/mBART/data/WikiLingual/download/raw/', help='output stream')
     parser.add_argument('--lang', '-lang', type=str,
                         default=r'en', help='output stream')
     args = parser.parse_args()
@@ -26,8 +28,8 @@ if __name__ == "__main__":
         data = pickle.load(input)
         for web in data.values():
             for article in web:
-                document.append(web[article]["document"].replace("\n"," ").replace("  "," ").strip())
-                summary.append(web[article]["summary"].replace("\n"," ").replace("  "," ").strip())
+                document.append(web[article]["document"].replace("\n", " ").replace("  ", " ").strip())
+                summary.append(web[article]["summary"].replace("\n", " ").replace("  ", " ").strip())
     assert len(document) == len(summary)
     document_summary = list(zip(document, summary))
     random.shuffle(document_summary)
@@ -47,6 +49,3 @@ if __name__ == "__main__":
             for i in range(len(document_summary) - TEST_NUMBER * 1, len(document_summary)):
                 output1.write("{}\n".format(document_summary[i][0]))
                 output2.write("{}\n".format(document_summary[i][1]))
-
-
-

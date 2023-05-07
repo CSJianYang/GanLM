@@ -20,10 +20,12 @@ from fairseq.data.encoders.sentencepiece_bpe import SentencepieceBPE
 import sentencepiece as spm
 import torch
 from fairseq.optim.amp_optimizer import AMPOptimizer
+
 logger = logging.getLogger(__name__)
 
 SAMPLE_BREAK_MODE_CHOICES = ChoiceEnum(["none", "complete", "complete_doc", "eos"])
 SHORTEN_METHOD_CHOICES = ChoiceEnum(["none", "truncate", "random_crop"])
+
 
 @dataclass
 class PretrainingConfig(FairseqDataclass):
@@ -38,10 +40,10 @@ class PretrainingConfig(FairseqDataclass):
         default="complete",
         metadata={
             "help": 'If omitted or "none", fills each sample with tokens-per-sample '
-            'tokens. If set to "complete", splits samples only at the end '
-            "of sentence, but may include multiple sentences per sample. "
-            '"complete_doc" is similar but respects doc boundaries. '
-            'If set to "eos", includes only one sentence per sample.'
+                    'tokens. If set to "complete", splits samples only at the end '
+                    "of sentence, but may include multiple sentences per sample. "
+                    '"complete_doc" is similar but respects doc boundaries. '
+                    'If set to "eos", includes only one sentence per sample.'
         },
     )
     tokens_per_sample: int = field(
@@ -86,7 +88,7 @@ class PretrainingConfig(FairseqDataclass):
         default="",
         metadata={
             "help": "comma-separated list of dataset splits to apply shortening to, "
-            'e.g., "train,valid" (default: all dataset splits)'
+                    'e.g., "train,valid" (default: all dataset splits)'
         },
     )
     seed: int = II("common.seed")
@@ -119,7 +121,6 @@ class PretrainingConfig(FairseqDataclass):
             "help": ""
         },
     )
-
 
 
 @register_task("pretraining", dataclass=PretrainingConfig)
@@ -162,16 +163,15 @@ class PLMTask(FairseqTask):
             'shuffle': True if split == 'train' else False,
         }
         self.datasets[split] = Namespace(**self.datasets[split])
-    
+
     def dataset(self, split):
         if split not in self.datasets:
             raise KeyError("Dataset not loaded: " + split)
-        
+
         return self.datasets[split]
 
-
     def train_step(
-        self, sample, model, criterion, optimizer, update_num, ignore_grad=False
+            self, sample, model, criterion, optimizer, update_num, ignore_grad=False
     ):
         """
         Do forward and backward, and return the loss as computed by *criterion*
@@ -204,36 +204,35 @@ class PLMTask(FairseqTask):
             optimizer.backward(loss)
         return loss, sample_size, logging_output
 
-
     def get_batch_iterator(
-        self,
-        dataset,
-        max_tokens=None,
-        max_sentences=None,
-        max_positions=None,
-        ignore_invalid_inputs=False,
-        required_batch_size_multiple=1,
-        seed=1,
-        num_shards=1,
-        shard_id=0,
-        num_workers=0,
-        epoch=1,
-        data_buffer_size=0,
-        disable_iterator_cache=False,
+            self,
+            dataset,
+            max_tokens=None,
+            max_sentences=None,
+            max_positions=None,
+            ignore_invalid_inputs=False,
+            required_batch_size_multiple=1,
+            seed=1,
+            num_shards=1,
+            shard_id=0,
+            num_workers=0,
+            epoch=1,
+            data_buffer_size=0,
+            disable_iterator_cache=False,
     ):
         return MLMLoader(
-                self.cfg,
-                dataset,
-                self.dictionary,
-                self.tokenizer,
-                max_tokens=max_tokens,
-                max_sentences=max_sentences,
-                max_positions=max_positions,
-                ignore_invalid_inputs=ignore_invalid_inputs,
-                required_batch_size_multiple=required_batch_size_multiple,
-                seed=seed,
-                num_shards=num_shards,
-                shard_id=shard_id,
+            self.cfg,
+            dataset,
+            self.dictionary,
+            self.tokenizer,
+            max_tokens=max_tokens,
+            max_sentences=max_sentences,
+            max_positions=max_positions,
+            ignore_invalid_inputs=ignore_invalid_inputs,
+            required_batch_size_multiple=required_batch_size_multiple,
+            seed=seed,
+            num_shards=num_shards,
+            shard_id=shard_id,
         )
 
     @property

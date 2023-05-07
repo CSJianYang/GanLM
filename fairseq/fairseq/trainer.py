@@ -80,8 +80,8 @@ class Trainer(object):
                 )
         else:
             if (
-                hasattr(self.cfg.distributed_training, "cpu_offload")
-                and self.cfg.distributed_training.cpu_offload
+                    hasattr(self.cfg.distributed_training, "cpu_offload")
+                    and self.cfg.distributed_training.cpu_offload
             ):
                 raise ValueError("--cpu-offload requires --ddp-backend=fully_sharded")
 
@@ -99,10 +99,10 @@ class Trainer(object):
             elif cfg.common.amp:
                 self._amp_retries = 0
         if (
-            not cfg.distributed_training.pipeline_model_parallel
-            # the DistributedFairseqModel wrapper will handle moving to device,
-            # so only handle cases which don't use the wrapper
-            and not self.use_distributed_wrapper
+                not cfg.distributed_training.pipeline_model_parallel
+                # the DistributedFairseqModel wrapper will handle moving to device,
+                # so only handle cases which don't use the wrapper
+                and not self.use_distributed_wrapper
         ):
             self._criterion = self._criterion.to(device=self.device)
             self._model = self._model.to(device=self.device)
@@ -196,16 +196,16 @@ class Trainer(object):
     @property
     def use_distributed_wrapper(self) -> bool:
         return (
-            self.data_parallel_world_size > 1 and not self.cfg.optimization.use_bmuf
+                self.data_parallel_world_size > 1 and not self.cfg.optimization.use_bmuf
         ) or (
-            self.is_fsdp and self.cfg.distributed_training.cpu_offload
+                self.is_fsdp and self.cfg.distributed_training.cpu_offload
         )
 
     @property
     def should_save_checkpoint_on_current_rank(self) -> bool:
         """Indicates whether to save checkpoints on the current DDP rank."""
         if (
-            self.is_fsdp and self.cfg.distributed_training.use_sharded_state
+                self.is_fsdp and self.cfg.distributed_training.use_sharded_state
         ) or getattr(self.cfg.model, "base_layers", 0) > 0:
             return True
         else:
@@ -307,8 +307,8 @@ class Trainer(object):
                     "please switch to FP32 which is likely to be faster"
                 )
             if (
-                self.cfg.common.memory_efficient_fp16
-                or self.cfg.common.memory_efficient_bf16
+                    self.cfg.common.memory_efficient_fp16
+                    or self.cfg.common.memory_efficient_bf16
             ):
                 self._optimizer = optim.MemoryEfficientFP16Optimizer.build_optimizer(
                     self.cfg, params
@@ -341,9 +341,9 @@ class Trainer(object):
 
         if self.cfg.distributed_training.zero_sharding == "os":
             if (
-                self.cfg.common.fp16
-                and not self.cfg.common.memory_efficient_fp16
-                and not self.cfg.common.memory_efficient_bf16
+                    self.cfg.common.fp16
+                    and not self.cfg.common.memory_efficient_fp16
+                    and not self.cfg.common.memory_efficient_bf16
             ) and not self.cfg.common.fp16_no_flatten_grads:
                 raise ValueError(
                     "ZeRO is incomptabile with fp16 and flattened grads. "
@@ -392,14 +392,14 @@ class Trainer(object):
                 else None
             ),
             "optimizer_history": (self._optim_history or [])
-            + [
-                {
-                    "criterion_name": self.get_criterion().__class__.__name__,
-                    "optimizer_name": self.optimizer.__class__.__name__,
-                    "lr_scheduler_state": self.lr_scheduler.state_dict(),
-                    "num_updates": self.get_num_updates(),
-                }
-            ],
+                                 + [
+                                     {
+                                         "criterion_name": self.get_criterion().__class__.__name__,
+                                         "optimizer_name": self.optimizer.__class__.__name__,
+                                         "lr_scheduler_state": self.lr_scheduler.state_dict(),
+                                         "num_updates": self.get_num_updates(),
+                                     }
+                                 ],
             "task_state": self.task.state_dict() if self.task is not None else {},
             "extra_state": {
                 "metrics": metrics.state_dict(),
@@ -438,13 +438,13 @@ class Trainer(object):
         logger.info(f"Finished saving checkpoint to {filename}")
 
     def load_checkpoint(
-        self,
-        filename,
-        reset_optimizer=False,
-        reset_lr_scheduler=False,
-        optimizer_overrides=None,
-        reset_meters=False,
-        cfg=None
+            self,
+            filename,
+            reset_optimizer=False,
+            reset_lr_scheduler=False,
+            optimizer_overrides=None,
+            reset_meters=False,
+            cfg=None
     ):
         """
         Load all training state from a checkpoint file.
@@ -458,13 +458,13 @@ class Trainer(object):
         bexists = PathManager.isfile(filename) or PathManager.isdir(filename)
         if bexists:
             load_on_all_ranks = (
-                self.cfg.checkpoint.load_checkpoint_on_all_dp_ranks
-                # TPUs don't support broadcast yet, so load checkpoints
-                # on every worker for now
-                or self.tpu
-                # FSDP requires loading checkpoint shards on all ranks
-                or (self.is_fsdp and self.cfg.distributed_training.use_sharded_state)
-                or getattr(self.cfg.model, "base_layers", 0) > 0
+                    self.cfg.checkpoint.load_checkpoint_on_all_dp_ranks
+                    # TPUs don't support broadcast yet, so load checkpoints
+                    # on every worker for now
+                    or self.tpu
+                    # FSDP requires loading checkpoint shards on all ranks
+                    or (self.is_fsdp and self.cfg.distributed_training.use_sharded_state)
+                    or getattr(self.cfg.model, "base_layers", 0) > 0
             )
 
             if load_on_all_ranks or self.data_parallel_rank == 0:
@@ -477,10 +477,10 @@ class Trainer(object):
                 # state. Later we will broadcast sharded states to each rank
                 # to avoid memory from exploding.
                 if (
-                    not load_on_all_ranks
-                    and self.cfg.distributed_training.zero_sharding == "os"
-                    and "last_optimizer_state" in state
-                    and is_distributed
+                        not load_on_all_ranks
+                        and self.cfg.distributed_training.zero_sharding == "os"
+                        and "last_optimizer_state" in state
+                        and is_distributed
                 ):
                     state["last_optimizer_state"] = "SHARDED"
             else:
@@ -532,10 +532,10 @@ class Trainer(object):
             # only reload optimizer and lr_scheduler if they match
             last_optim = self._optim_history[-1]
             assert (
-                last_optim["criterion_name"] == self.get_criterion().__class__.__name__
+                    last_optim["criterion_name"] == self.get_criterion().__class__.__name__
             ), f"Criterion does not match; please reset the optimizer (--reset-optimizer). {last_optim['criterion_name']} vs {self.get_criterion().__class__.__name__}"
             assert (
-                last_optim["optimizer_name"] == self.optimizer.__class__.__name__
+                    last_optim["optimizer_name"] == self.optimizer.__class__.__name__
             ), f"Optimizer does not match; please reset the optimizer (--reset-optimizer). {last_optim['optimizer_name']} vs {self.optimizer.__class__.__name__}"
 
             if not reset_lr_scheduler:
@@ -570,8 +570,8 @@ class Trainer(object):
             self.lr_step(epoch)
 
             if (
-                itr_state.get("version", 1) >= 2
-                and itr_state.get("iterations_in_epoch", 0) == 0
+                    itr_state.get("version", 1) >= 2
+                    and itr_state.get("iterations_in_epoch", 0) == 0
             ):
                 # reset meters at start of epoch
                 reset_meters = True
@@ -621,13 +621,13 @@ class Trainer(object):
         return extra_state
 
     def get_train_iterator(
-        self,
-        epoch,
-        combine=True,
-        load_dataset=True,
-        data_selector=None,
-        shard_batch_itr=True,
-        disable_iterator_cache=False,
+            self,
+            epoch,
+            combine=True,
+            load_dataset=True,
+            data_selector=None,
+            shard_batch_itr=True,
+            disable_iterator_cache=False,
     ):
         """Return an EpochBatchIterator over the training set for a given epoch."""
         if load_dataset:
@@ -662,9 +662,9 @@ class Trainer(object):
         return batch_iterator
 
     def get_valid_iterator(
-        self,
-        subset,
-        disable_iterator_cache=False,
+            self,
+            subset,
+            disable_iterator_cache=False,
     ):
         """Return an EpochBatchIterator over given validation subset for a given epoch."""
         batch_iterator = self.task.get_batch_iterator(
@@ -746,14 +746,14 @@ class Trainer(object):
                 all-reduce in the last backwards pass.
                 """
                 if (
-                    self.data_parallel_world_size > 1
-                    and hasattr(self.model, "no_sync")
-                    and i < len(samples) - 1
-                    # The no_sync context manager results in increased memory
-                    # usage with FSDP, since full-size gradients will be
-                    # accumulated on each GPU. It's typically a better tradeoff
-                    # to do the extra communication with FSDP.
-                    and not self.is_fsdp
+                        self.data_parallel_world_size > 1
+                        and hasattr(self.model, "no_sync")
+                        and i < len(samples) - 1
+                        # The no_sync context manager results in increased memory
+                        # usage with FSDP, since full-size gradients will be
+                        # accumulated on each GPU. It's typically a better tradeoff
+                        # to do the extra communication with FSDP.
+                        and not self.is_fsdp
                 ):
                     return self.model.no_sync()
                 else:
@@ -827,7 +827,7 @@ class Trainer(object):
                 logging_outputs, sample_size, ooms, train_time, ignore=is_dummy_batch
             )
             self._cumulative_training_time = (
-                total_train_time / self.data_parallel_world_size
+                    total_train_time / self.data_parallel_world_size
             )
 
         overflow = False
@@ -865,8 +865,8 @@ class Trainer(object):
             # on tpu check tensor is slow
             if not self.tpu:
                 if (
-                    not self.cfg.optimization.use_bmuf
-                    and self.cfg.distributed_training.ddp_backend != "slow_mo"
+                        not self.cfg.optimization.use_bmuf
+                        and self.cfg.distributed_training.ddp_backend != "slow_mo"
                 ):
                     self._check_grad_norms(grad_norm)
                 if not torch.isfinite(grad_norm).all():
@@ -999,13 +999,13 @@ class Trainer(object):
 
                 # clear CUDA cache to reduce memory fragmentation
                 if (
-                    self.cuda
-                    and self.cfg.common.empty_cache_freq > 0
-                    and (
+                        self.cuda
+                        and self.cfg.common.empty_cache_freq > 0
+                        and (
                         (self.get_num_updates() + self.cfg.common.empty_cache_freq - 1)
                         % self.cfg.common.empty_cache_freq
-                    )
-                    == 0
+                )
+                        == 0
                 ):
                     torch.cuda.empty_cache()
 
@@ -1157,7 +1157,7 @@ class Trainer(object):
         elif name in {"valid_loss", "valid_nll_loss"}:
             # support for legacy train.py, which assumed these meters
             # are always initialized
-            k = name[len("valid_") :]
+            k = name[len("valid_"):]
             m = metrics.get_meter("valid", k)
             return m or meters.AverageMeter()
         elif name == "oom":
@@ -1187,11 +1187,11 @@ class Trainer(object):
             return total_norm ** 0.5
 
         should_agg_norm = (
-            self.is_fsdp
-            and (
-                self.data_parallel_process_group is not None
-                or torch.distributed.is_initialized()
-            )
+                self.is_fsdp
+                and (
+                        self.data_parallel_process_group is not None
+                        or torch.distributed.is_initialized()
+                )
         )
         return self.optimizer.clip_grad_norm(
             clip_norm, aggregate_norm_fn=agg_norm_fn if should_agg_norm else None
@@ -1237,7 +1237,7 @@ class Trainer(object):
 
         if sample is None or len(sample) == 0:
             assert (
-                self._dummy_batch is not None and len(self._dummy_batch) > 0
+                    self._dummy_batch is not None and len(self._dummy_batch) > 0
             ), "Invalid dummy batch: {}".format(self._dummy_batch)
             sample, _ = self._prepare_sample(self._dummy_batch, is_dummy=True)
             return sample, True
@@ -1280,9 +1280,9 @@ class Trainer(object):
             return False
         elif self.cfg.optimization.use_bmuf:
             return (
-                self.get_num_updates() + 1
+                    self.get_num_updates() + 1
             ) % self.cfg.bmuf.global_sync_iter == 0 and (
-                self.get_num_updates() + 1
+                    self.get_num_updates() + 1
             ) > self.cfg.bmuf.warmup_iterations
         else:
             return True
@@ -1296,10 +1296,10 @@ class Trainer(object):
         sys.stderr.flush()
 
     def _aggregate_logging_outputs(
-        self,
-        logging_outputs: List[Dict[str, Any]],
-        *extra_stats_to_sum,
-        ignore=False,
+            self,
+            logging_outputs: List[Dict[str, Any]],
+            *extra_stats_to_sum,
+            ignore=False,
     ):
         if self.task.__class__.logging_outputs_can_be_summed(self.get_criterion()):
             return self._fast_stat_sync_sum(
@@ -1311,10 +1311,10 @@ class Trainer(object):
             )
 
     def _all_gather_list_sync(
-        self,
-        logging_outputs: List[Dict[str, Any]],
-        *extra_stats_to_sum,
-        ignore=False,
+            self,
+            logging_outputs: List[Dict[str, Any]],
+            *extra_stats_to_sum,
+            ignore=False,
     ):
         """
         Sync logging outputs across workers. all_gather_list_sync is
@@ -1339,10 +1339,10 @@ class Trainer(object):
         return logging_outputs, extra_stats_to_sum
 
     def _fast_stat_sync_sum(
-        self,
-        logging_outputs: List[Dict[str, Any]],
-        *extra_stats_to_sum,
-        ignore=False,
+            self,
+            logging_outputs: List[Dict[str, Any]],
+            *extra_stats_to_sum,
+            ignore=False,
     ):
         """
         Sync logging outputs across workers. fast_stat_sync_sum is
@@ -1390,10 +1390,10 @@ class Trainer(object):
             def is_consistent(tensor):
                 max_abs_diff = torch.max(torch.abs(tensor - tensor[0]))
                 return (
-                    (torch.isfinite(tensor).all()
-                     and (max_abs_diff / (tensor[0] + 1e-6) < 1e-6).all())
-                    or
-                    (self.cfg.common.amp and not torch.isfinite(tensor).all())
+                        (torch.isfinite(tensor).all()
+                         and (max_abs_diff / (tensor[0] + 1e-6) < 1e-6).all())
+                        or
+                        (self.cfg.common.amp and not torch.isfinite(tensor).all())
                     # in case of amp non-finite grads are fine
                 )
 
@@ -1418,7 +1418,7 @@ class Trainer(object):
 
     def _reduce_and_log_stats(self, logging_outputs, sample_size, grad_norm=None):
         if grad_norm is not None and (
-            not torch.is_tensor(grad_norm) or torch.isfinite(grad_norm)
+                not torch.is_tensor(grad_norm) or torch.isfinite(grad_norm)
         ):
             metrics.log_speed("ups", 1.0, priority=100, round=2)
             metrics.log_scalar("gnorm", grad_norm, priority=400, round=3)
@@ -1437,12 +1437,16 @@ class Trainer(object):
             if logging_outputs is not None:
                 self.task.reduce_metrics(logging_outputs, self.get_criterion())
                 if "discriminator_weight" in logging_outputs[0]:
-                    discriminator_weight = logging_outputs[0].get("discriminator_weight", 0) / self.data_parallel_world_size / self.cfg.optimization.update_freq[0]
+                    discriminator_weight = logging_outputs[0].get("discriminator_weight",
+                                                                  0) / self.data_parallel_world_size / \
+                                           self.cfg.optimization.update_freq[0]
                     metrics.log_scalar(
                         "discriminator_weight", discriminator_weight, round=4
                     )
                 if "inconsistency_weight" in logging_outputs[0]:
-                    inconsistency_weight = logging_outputs[0].get("inconsistency_weight", 0) / self.data_parallel_world_size / self.cfg.optimization.update_freq[0]
+                    inconsistency_weight = logging_outputs[0].get("inconsistency_weight",
+                                                                  0) / self.data_parallel_world_size / \
+                                           self.cfg.optimization.update_freq[0]
                     metrics.log_scalar(
                         "inconsistency_weight", inconsistency_weight, round=4
                     )

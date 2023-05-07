@@ -29,13 +29,14 @@ from fairseq.modules import transformer_layer, TransformerEncoderLayer
 from fairseq.modules.checkpoint_activations import checkpoint_wrapper
 from fairseq.modules.quant_noise import quant_noise as apply_quant_noise_
 from torch import Tensor
+
+
 # rewrite name for backward compatibility in `make_generation_fast_`
 def module_name_fordropout(module_name: str) -> str:
     if module_name == 'TransformerEncoderBase':
         return 'TransformerEncoder'
     else:
         return module_name
-
 
 
 class T5TransformerEncoderLayer(TransformerEncoderLayer):
@@ -56,12 +57,11 @@ class T5TransformerEncoderLayer(TransformerEncoderLayer):
     def __init__(self, args, dictionary, embed_tokens):
         super().__init__(args, dictionary, embed_tokens)
 
-
     def forward(
-        self,
-        x,
-        encoder_padding_mask: Optional[Tensor],
-        attn_mask: Optional[Tensor] = None,
+            self,
+            x,
+            encoder_padding_mask: Optional[Tensor],
+            attn_mask: Optional[Tensor] = None,
     ):
         """
         Args:
@@ -116,7 +116,6 @@ class T5TransformerEncoderLayer(TransformerEncoderLayer):
         if not self.normalize_before:
             x = self.final_layer_norm(x)
         return x
-
 
 
 class T5TransformerEncoder(TransformerEncoder):
@@ -192,7 +191,7 @@ class T5TransformerEncoder(TransformerEncoder):
         )
 
     def forward_embedding(
-        self, src_tokens, token_embedding: Optional[torch.Tensor] = None
+            self, src_tokens, token_embedding: Optional[torch.Tensor] = None
     ):
         # embed tokens and positions
         if token_embedding is None:
@@ -207,17 +206,16 @@ class T5TransformerEncoder(TransformerEncoder):
             x = self.quant_noise(x)
         return x, embed
 
-
     # TorchScript doesn't support super() method so that the scriptable Subclass
     # can't access the base class model in Torchscript.
     # Current workaround is to add a helper function with different name and
     # call the helper function from scriptable Subclass.
     def forward_scriptable(
-        self,
-        src_tokens,
-        src_lengths: Optional[torch.Tensor] = None,
-        return_all_hiddens: bool = False,
-        token_embeddings: Optional[torch.Tensor] = None,
+            self,
+            src_tokens,
+            src_lengths: Optional[torch.Tensor] = None,
+            return_all_hiddens: bool = False,
+            token_embeddings: Optional[torch.Tensor] = None,
     ):
         """
         Args:
@@ -249,7 +247,7 @@ class T5TransformerEncoder(TransformerEncoder):
         x, encoder_embedding = self.forward_embedding(src_tokens, token_embeddings)
 
         self_attn_mask = self.build_self_attn_mask(src_tokens, bidirectional=True)
-        #relative positions bias
+        # relative positions bias
         if self.relative_position is not None:
             rel_pos_bias = self.relative_position(
                 batch_size=src_tokens.size(0),
@@ -257,7 +255,6 @@ class T5TransformerEncoder(TransformerEncoder):
                 klen=src_tokens.size(1)
             )
             self_attn_mask = self_attn_mask.unsqueeze(0) + rel_pos_bias
-
 
         # account for padding while computing the representation
         if has_pads:
@@ -300,25 +297,22 @@ class T5TransformerEncoder(TransformerEncoder):
         }
 
 
-
 @register_model("t5_transformer")
 class T5TransformerModel(TransformerModel):
     """
     This is the legacy implementation of the transformer model that
     uses argparse for configuration.
     """
+
     @classmethod
     def build_encoder(cls, args, src_dict, embed_tokens):
         return T5TransformerEncoder(TransformerConfig.from_namespace(args), src_dict, embed_tokens)
-
 
     @classmethod
     def build_decoder(cls, args, tgt_dict, embed_tokens):
         return super().build_decoder(
             TransformerConfig.from_namespace(args), tgt_dict, embed_tokens
         )
-
-
 
 
 # architectures
@@ -378,7 +372,6 @@ def t5_transformer_base_architecture(args):
     args.quant_noise_scalar = getattr(args, "quant_noise_scalar", 0)
 
 
-
 @register_model_architecture("t5_transformer", "t5_transformer_base")
 def t5_transformer_base(args):
     t5_transformer_base_architecture(args)
@@ -395,4 +388,3 @@ def t5_transformer_big(args):
     args.decoder_attention_heads = getattr(args, "decoder_attention_heads", 16)
     args.dropout = getattr(args, "dropout", 0.3)
     t5_transformer_base_architecture(args)
-

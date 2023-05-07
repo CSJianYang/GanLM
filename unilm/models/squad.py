@@ -9,6 +9,7 @@ from fairseq.modules import (
     LayerNorm,
 )
 
+
 class PoolerLogits(nn.Module):
     """
     Compute SQuAD start logits from sequence hidden states.
@@ -25,7 +26,7 @@ class PoolerLogits(nn.Module):
         self.dense.bias.data.zero_()
 
     def forward(
-        self, hidden_states, p_mask = None
+            self, hidden_states, p_mask=None
     ):
         """
         Args:
@@ -45,7 +46,6 @@ class PoolerLogits(nn.Module):
         return x
 
 
-
 class SQuADHead(nn.Module):
 
     def __init__(self, hidden_size):
@@ -54,11 +54,11 @@ class SQuADHead(nn.Module):
         self.end_logits = PoolerLogits(hidden_size)
 
     def forward(
-        self,
-        hidden_states,
-        start_positions=None,
-        end_positions=None,
-        p_mask = None,
+            self,
+            hidden_states,
+            start_positions=None,
+            end_positions=None,
+            p_mask=None,
     ):
         """
         Args:
@@ -90,6 +90,7 @@ class SQuADHead(nn.Module):
                     targets.view(-1),
                     reduction='sum',
                 )
+
             start_loss = loss_fct(start_logits, start_positions)
             end_loss = loss_fct(end_logits, end_positions)
             total_loss = (start_loss + end_loss) * 0.5

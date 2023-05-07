@@ -1,4 +1,4 @@
-import os
+# import os
 from sys import argv
 import json
 
@@ -14,5 +14,3 @@ with open('test_data/outs.json', 'w') as f:
     for sample in lines:
         output['values'].append({"generated": sample})
     print(json.dumps(output, indent=4, ensure_ascii=False), file=f)
-        
-        

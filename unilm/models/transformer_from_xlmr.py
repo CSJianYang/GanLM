@@ -16,7 +16,9 @@ from fairseq.models.transformer import (
     base_architecture as transformer_base_architecture,
 )
 import logging
+
 logger = logging.getLogger(__name__)
+
 
 @register_model("transformer_from_xlmr")
 class TransformerFromPretrainedXLMRModel(TransformerModel):
@@ -41,7 +43,8 @@ class TransformerFromPretrainedXLMRModel(TransformerModel):
         )
 
     def upgrade_xlmr_state_for_encoder(
-            self, state_dict: Dict[str, Any], xlmr_state_dict: str, num_layers: int, shared_cross_attn: bool = False, prefix="decoder.sentence_encoder.", new_prefix="encoder."
+            self, state_dict: Dict[str, Any], xlmr_state_dict: str, num_layers: int, shared_cross_attn: bool = False,
+            prefix="decoder.sentence_encoder.", new_prefix="encoder."
     ) -> Dict[str, Any]:
         for key in xlmr_state_dict.keys():
             if 'layers' in key and int(key.split('.')[3]) > num_layers - 1:
@@ -55,30 +58,39 @@ class TransformerFromPretrainedXLMRModel(TransformerModel):
                     state_dict[key.replace(prefix, new_prefix).replace('in_proj_weight', 'k_proj.weight')] = k
                     state_dict[key.replace(prefix, new_prefix).replace('in_proj_weight', 'v_proj.weight')] = v
                     if shared_cross_attn:
-                        state_dict[key.replace(prefix, new_prefix).replace('in_proj_weight', 'q_proj.weight').replace('self_attn', 'encoder_attn')] = q
-                        state_dict[key.replace(prefix, new_prefix).replace('in_proj_weight', 'k_proj.weight').replace('self_attn', 'encoder_attn')] = k
-                        state_dict[key.replace(prefix, new_prefix).replace('in_proj_weight', 'v_proj.weight').replace('self_attn', 'encoder_attn')] = v
+                        state_dict[key.replace(prefix, new_prefix).replace('in_proj_weight', 'q_proj.weight').replace(
+                            'self_attn', 'encoder_attn')] = q
+                        state_dict[key.replace(prefix, new_prefix).replace('in_proj_weight', 'k_proj.weight').replace(
+                            'self_attn', 'encoder_attn')] = k
+                        state_dict[key.replace(prefix, new_prefix).replace('in_proj_weight', 'v_proj.weight').replace(
+                            'self_attn', 'encoder_attn')] = v
                 elif 'in_proj_bias' in key:
                     q, k, v = xlmr_state_dict[key].chunk(3, dim=0)
                     state_dict[key.replace(prefix, new_prefix).replace('in_proj_bias', 'q_proj.bias')] = q
                     state_dict[key.replace(prefix, new_prefix).replace('in_proj_bias', 'k_proj.bias')] = k
                     state_dict[key.replace(prefix, new_prefix).replace('in_proj_bias', 'v_proj.bias')] = v
                     if shared_cross_attn:
-                        state_dict[key.replace(prefix, new_prefix).replace('in_proj_bias', 'q_proj.bias').replace('self_attn', 'encoder_attn')] = q
-                        state_dict[key.replace(prefix, new_prefix).replace('in_proj_bias', 'k_proj.bias').replace('self_attn', 'encoder_attn')] = k
-                        state_dict[key.replace(prefix, new_prefix).replace('in_proj_bias', 'v_proj.bias').replace('self_attn', 'encoder_attn')] = v
+                        state_dict[
+                            key.replace(prefix, new_prefix).replace('in_proj_bias', 'q_proj.bias').replace('self_attn',
+                                                                                                           'encoder_attn')] = q
+                        state_dict[
+                            key.replace(prefix, new_prefix).replace('in_proj_bias', 'k_proj.bias').replace('self_attn',
+                                                                                                           'encoder_attn')] = k
+                        state_dict[
+                            key.replace(prefix, new_prefix).replace('in_proj_bias', 'v_proj.bias').replace('self_attn',
+                                                                                                           'encoder_attn')] = v
                 elif 'emb_layer_norm' in key:
-                    state_dict[key.replace(f'{prefix}emb_layer_norm', f'{new_prefix}layernorm_embedding')] = xlmr_state_dict[key]
+                    state_dict[key.replace(f'{prefix}emb_layer_norm', f'{new_prefix}layernorm_embedding')] = \
+                    xlmr_state_dict[key]
                 elif 'embed_positions' in key:
-                    state_dict[key.replace(prefix, new_prefix)] = xlmr_state_dict[key][:state_dict[key.replace(prefix, new_prefix)].size(0)]
+                    state_dict[key.replace(prefix, new_prefix)] = xlmr_state_dict[key][
+                                                                  :state_dict[key.replace(prefix, new_prefix)].size(0)]
                 elif 'embed_tokens' in key:
                     state_dict[key.replace(prefix, new_prefix)][:xlmr_state_dict[key].size(0)] = xlmr_state_dict[key]
                 else:
                     state_dict[key.replace(prefix, new_prefix)] = xlmr_state_dict[key]
 
         return state_dict
-
-
 
     def upgrade_state_dict_named(self, state_dict, name):
         def upgrade_position_embed(k, cur_state_dict, state_dict, prefix, new_prefix="encoder", max_positions=-1):
@@ -96,10 +108,17 @@ class TransformerFromPretrainedXLMRModel(TransformerModel):
         shared_cross_attn = getattr(self.args, "shared_cross_attn", False)
         if "decoder.sentence_encoder.embed_tokens.weight" in state_dict:  # XLM-R State
             if getattr(self.args, "init_encoder_only", False):
-                cur_state_dict = self.upgrade_xlmr_state_for_encoder(cur_state_dict, xlmr_state_dict=state_dict, num_layers=self.args.encoder_layers, prefix="decoder.sentence_encoder.", new_prefix="encoder.")
+                cur_state_dict = self.upgrade_xlmr_state_for_encoder(cur_state_dict, xlmr_state_dict=state_dict,
+                                                                     num_layers=self.args.encoder_layers,
+                                                                     prefix="decoder.sentence_encoder.",
+                                                                     new_prefix="encoder.")
                 logger.info(f"Loading XLM-R for Encoder of {self.args.arch}")
             if getattr(self.args, "init_decoder_only", False):
-                cur_state_dict = self.upgrade_xlmr_state_for_encoder(cur_state_dict, xlmr_state_dict=state_dict, num_layers=self.args.decoder_layers, prefix="decoder.sentence_encoder.", new_prefix="decoder.", shared_cross_attn=shared_cross_attn)
+                cur_state_dict = self.upgrade_xlmr_state_for_encoder(cur_state_dict, xlmr_state_dict=state_dict,
+                                                                     num_layers=self.args.decoder_layers,
+                                                                     prefix="decoder.sentence_encoder.",
+                                                                     new_prefix="decoder.",
+                                                                     shared_cross_attn=shared_cross_attn)
                 logger.info(f"Loading XLM-R for Decoder of {self.args.arch} (self-attn = cross-attn)")
             state_dict.clear()
             for k, v in cur_state_dict.items():
@@ -181,7 +200,7 @@ def transformer_from_xlmr(args):
     args.encoder_attention_heads = getattr(args, "encoder_attention_heads", 12)
     args.encoder_learned_pos = getattr(args, "encoder_learned_pos", True)
     args.decoder_embed_dim = getattr(args, "decoder_embed_dim", args.encoder_embed_dim)
-    args.decoder_ffn_embed_dim = getattr(args, "decoder_ffn_embed_dim", args.encoder_ffn_embed_dim )
+    args.decoder_ffn_embed_dim = getattr(args, "decoder_ffn_embed_dim", args.encoder_ffn_embed_dim)
     args.decoder_layers = getattr(args, "decoder_layers", 12)
     args.decoder_attention_heads = getattr(args, "decoder_attention_heads", 12)
     args.decoder_learned_pos = getattr(args, "decoder_learned_pos", True)

@@ -65,7 +65,7 @@ class XNLIConfig(FairseqDataclass):
         default="",
         metadata={
             "help": "comma-separated list of dataset splits to apply shortening to, "
-            'e.g., "train,valid" (default: all dataset splits)'
+                    'e.g., "train,valid" (default: all dataset splits)'
         },
     )
     add_prev_output_tokens: bool = field(
@@ -87,7 +87,6 @@ class XNLIConfig(FairseqDataclass):
         metadata={"help": "max tokens per example"},
     )
 
-
     regression_target: bool = II("criterion.regression_target")
     classification_head_name: str = II("criterion.classification_head_name")
     seed: int = II("common.seed")
@@ -108,7 +107,7 @@ class XNLISentencePredictionTask(FairseqTask):
         self._label_dictionary = label_dictionary
 
     @classmethod
-    def load_dictionary(cls, filename, add_mask_token = False):
+    def load_dictionary(cls, filename, add_mask_token=False):
         """Load the dictionary from the filename
 
         Args:
@@ -119,7 +118,7 @@ class XNLISentencePredictionTask(FairseqTask):
             dictionary.add_symbol("<mask>")
             for i in range(100):
                 dictionary.add_symbol(f"<mask_{i}>")
-        #dictionary.pad_to_multiple_(padding_factor=8)
+        # dictionary.pad_to_multiple_(padding_factor=8)
         return dictionary
 
     @classmethod
@@ -177,11 +176,11 @@ class XNLISentencePredictionTask(FairseqTask):
                     raise e
             return dataset
 
-        input0 = make_dataset("input0", self.source_dictionary, lg = lg)
+        input0 = make_dataset("input0", self.source_dictionary, lg=lg)
         assert input0 is not None, "could not find dataset: {}".format(
             get_path("input0", split)
         )
-        input1 = make_dataset("input1", self.source_dictionary, lg = lg)
+        input1 = make_dataset("input1", self.source_dictionary, lg=lg)
 
         if self.cfg.init_token is not None:
             input0 = PrependTokenDataset(input0, self.cfg.init_token)
@@ -243,11 +242,10 @@ class XNLISentencePredictionTask(FairseqTask):
         else:
             label_path = "{0}.label".format(get_path("label", split))
             if os.path.exists(label_path):
-
                 def parse_regression_target(i, line):
                     values = line.split()
                     assert (
-                        len(values) == self.cfg.num_classes
+                            len(values) == self.cfg.num_classes
                     ), f'expected num_classes={self.cfg.num_classes} regression target values on line {i}, found: "{line}"'
                     return [float(x) for x in values]
 
@@ -282,7 +280,6 @@ class XNLISentencePredictionTask(FairseqTask):
         else:
             self.datasets[split] = dataset
             return self.datasets[split]
-
 
     def build_model(self, cfg):
         from fairseq import models

@@ -20,7 +20,6 @@ additional na_prob.json file is provided. This file is expected to map question 
 probability that a question is unanswerable.
 """
 
-
 import collections
 import json
 import math
@@ -32,7 +31,8 @@ logger = logging.getLogger(__name__)
 
 from . import BasicTokenizer
 
-#todo, check xl-net implementation https://github.com/google-research/albert/blob/master/squad_utils.py
+
+# todo, check xl-net implementation https://github.com/google-research/albert/blob/master/squad_utils.py
 
 
 class SquadResult:
@@ -48,6 +48,7 @@ class SquadResult:
         self.start_logits = start_logits
         self.end_logits = end_logits
         self.unique_id = unique_id
+
 
 def normalize_answer(s):
     """Lower text and remove punctuation, articles and extra whitespace."""
@@ -357,7 +358,7 @@ def get_final_text(pred_text, orig_text, do_lower_case, verbose_logging=False):
             logger.info("Couldn't map end position")
         return orig_text
 
-    output_text = orig_text[orig_start_position : (orig_end_position + 1)]
+    output_text = orig_text[orig_start_position: (orig_end_position + 1)]
     return output_text
 
 
@@ -397,19 +398,19 @@ def _compute_softmax(scores):
 
 
 def compute_predictions_logits(
-    all_examples,
-    all_features,
-    all_results,
-    n_best_size,
-    max_answer_length,
-    do_lower_case,
-    output_prediction_file,
-    output_nbest_file,
-    output_null_log_odds_file,
-    verbose_logging,
-    version_2_with_negative,
-    null_score_diff_threshold,
-    tokenizer,
+        all_examples,
+        all_features,
+        all_results,
+        n_best_size,
+        max_answer_length,
+        do_lower_case,
+        output_prediction_file,
+        output_nbest_file,
+        output_null_log_odds_file,
+        verbose_logging,
+        version_2_with_negative,
+        null_score_diff_threshold,
+        tokenizer,
 ):
     """Write final predictions to the json file and log-odds of null if needed."""
     if output_prediction_file:
@@ -510,10 +511,10 @@ def compute_predictions_logits(
                 break
             feature = features[pred.feature_index]
             if pred.start_index > 0:  # this is a non-null prediction
-                tok_tokens = feature.tokens[pred.start_index : (pred.end_index + 1)]
+                tok_tokens = feature.tokens[pred.start_index: (pred.end_index + 1)]
                 orig_doc_start = feature.token_to_orig_map[pred.start_index]
                 orig_doc_end = feature.token_to_orig_map[pred.end_index]
-                orig_tokens = example.doc_tokens[orig_doc_start : (orig_doc_end + 1)]
+                orig_tokens = example.doc_tokens[orig_doc_start: (orig_doc_end + 1)]
 
                 # tok_text = tokenizer.convert_tokens_to_string(tok_tokens)
                 tok_text = tokenizer.decode(" ".join(tok_tokens))

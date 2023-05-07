@@ -4,7 +4,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import sys,os
+import sys, os
+
 sys.path.append(os.path.join(sys.path[0], '..'))
 import logging
 import glob
@@ -21,7 +22,6 @@ import shutil
 
 # pip install pyrouge
 from evaluation.bs_pyrouge import Rouge155
-
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt='%m/%d/%Y %H:%M:%S',
@@ -138,7 +138,7 @@ _tok_dict = {"(": "-LRB-", ")": "-RRB-",
 
 def _is_digit(w):
     for ch in w:
-        if not(ch.isdigit() or ch == ','):
+        if not (ch.isdigit() or ch == ','):
             return False
     return True
 
@@ -164,12 +164,13 @@ def fix_tokenization(text):
                 output_tokens.append("``")
             has_left_quote = not has_left_quote
             i += 1
-        elif tok == "'" and len(output_tokens) > 0 and output_tokens[-1].endswith("n") and i < len(input_tokens) - 1 and input_tokens[i + 1] == "t":
+        elif tok == "'" and len(output_tokens) > 0 and output_tokens[-1].endswith("n") and i < len(input_tokens) - 1 and \
+                input_tokens[i + 1] == "t":
             output_tokens[-1] = output_tokens[-1][:-1]
             output_tokens.append("n't")
             i += 2
         elif tok == "'" and i < len(input_tokens) - 1 and input_tokens[i + 1] in ("s", "d", "ll"):
-            output_tokens.append("'"+input_tokens[i + 1])
+            output_tokens.append("'" + input_tokens[i + 1])
             i += 2
         elif tok == "'":
             if has_left_single_quote:
@@ -181,18 +182,22 @@ def fix_tokenization(text):
         elif tok == "." and i < len(input_tokens) - 2 and input_tokens[i + 1] == "." and input_tokens[i + 2] == ".":
             output_tokens.append("...")
             i += 3
-        elif tok == "," and len(output_tokens) > 0 and _is_digit(output_tokens[-1]) and i < len(input_tokens) - 1 and _is_digit(input_tokens[i + 1]):
+        elif tok == "," and len(output_tokens) > 0 and _is_digit(output_tokens[-1]) and i < len(
+                input_tokens) - 1 and _is_digit(input_tokens[i + 1]):
             # $ 3 , 000 -> $ 3,000
-            output_tokens[-1] += ','+input_tokens[i + 1]
+            output_tokens[-1] += ',' + input_tokens[i + 1]
             i += 2
-        elif tok == "." and len(output_tokens) > 0 and output_tokens[-1].isdigit() and i < len(input_tokens) - 1 and input_tokens[i + 1].isdigit():
+        elif tok == "." and len(output_tokens) > 0 and output_tokens[-1].isdigit() and i < len(input_tokens) - 1 and \
+                input_tokens[i + 1].isdigit():
             # 3 . 03 -> $ 3.03
-            output_tokens[-1] += '.'+input_tokens[i + 1]
+            output_tokens[-1] += '.' + input_tokens[i + 1]
             i += 2
-        elif tok == "." and len(output_tokens) > 0 and len(output_tokens[-1]) == 1 and output_tokens[-1].isupper() and i < len(input_tokens) - 2 and len(input_tokens[i + 1]) == 1 and input_tokens[i + 1].isupper() and input_tokens[i + 2] == '.':
+        elif tok == "." and len(output_tokens) > 0 and len(output_tokens[-1]) == 1 and output_tokens[
+            -1].isupper() and i < len(input_tokens) - 2 and len(input_tokens[i + 1]) == 1 and input_tokens[
+            i + 1].isupper() and input_tokens[i + 2] == '.':
             # U . N . -> U.N.
-            k = i+3
-            while k+2 < len(input_tokens):
+            k = i + 3
+            while k + 2 < len(input_tokens):
                 if len(input_tokens[k + 1]) == 1 and input_tokens[k + 1].isupper() and input_tokens[k + 2] == '.':
                     k += 2
                 else:
@@ -229,7 +234,7 @@ def remove_duplicate(l_list, duplicate_rate):
     history_set = set()
     for i, w_list in enumerate(tk_list):
         w_set = set(w_list)
-        if len(w_set & history_set)/len(w_set) <= duplicate_rate:
+        if len(w_set & history_set) / len(w_set) <= duplicate_rate:
             r_list.append(l_list[i])
         history_set |= w_set
     return r_list
@@ -276,7 +281,7 @@ def process_eval(eval_fn):
                 trunc_list = buf
             line = "\n".join(trunc_list)
             pred_list.append(line)
-    with open(eval_fn+'.post', 'w', encoding='utf-8') as f_out:
+    with open(eval_fn + '.post', 'w', encoding='utf-8') as f_out:
         for l in pred_list:
             f_out.write(l.replace('\n', ' [X_SEP] ').strip())
             f_out.write('\n')
@@ -296,9 +301,9 @@ def main():
     if args.perl:
         eval_fn_list = list(glob.glob(args.pred))
     else:
-        eval_fn_list = [eval_fn for eval_fn in glob.glob(args.pred) if not(
-            args.lazy_eval and Path(eval_fn+".rouge").exists())]
-    eval_fn_list = list(filter(lambda fn: not(fn.endswith(
+        eval_fn_list = [eval_fn for eval_fn in glob.glob(args.pred) if not (
+                args.lazy_eval and Path(eval_fn + ".rouge").exists())]
+    eval_fn_list = list(filter(lambda fn: not (fn.endswith(
         '.post') or fn.endswith('.rouge')), eval_fn_list))
 
     if args.only_eval_best:
@@ -332,8 +337,9 @@ def main():
         else:
             rg2_dict[fn] = scores['rouge-2']['f']
             print(
-                "ROUGE-1: {}\tROUGE-2: {} ROUGE-l: {}\n".format(scores['rouge-1']['f'], scores['rouge-2']['f'], scores['rouge-l']['f']))
-            with open(fn+".rouge", 'w') as f_out:
+                "ROUGE-1: {}\tROUGE-2: {} ROUGE-l: {}\n".format(scores['rouge-1']['f'], scores['rouge-2']['f'],
+                                                                scores['rouge-l']['f']))
+            with open(fn + ".rouge", 'w') as f_out:
                 f_out.write(json.dumps(
                     {'rg1': scores['rouge-1']['f'], 'rg2': scores['rouge-2']['f']}))
     p.close()
@@ -348,7 +354,7 @@ def main():
                 group_dict[d_name] = (o_name, v)
         # compare and save the best result
         for k, v in group_dict.items():
-            fn = os.path.join(k, 'save_best.'+args.split)
+            fn = os.path.join(k, 'save_best.' + args.split)
             o_name_s, rst_s = v
             should_save = True
             if Path(fn).exists():

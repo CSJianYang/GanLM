@@ -66,7 +66,7 @@ def cli_main():
             with open(args.ref) as fdref:
                 scorer = bleu.Scorer(dict.pad(), dict.eos(), dict.unk())
                 for i, (sys_tok, ref_tok) in enumerate(
-                    zip(readlines(fdsys), readlines(fdref))
+                        zip(readlines(fdsys), readlines(fdref))
                 ):
                     scorer.reset(one_init=True)
                     sys_tok = dict.encode_line(sys_tok)

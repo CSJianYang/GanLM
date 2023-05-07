@@ -50,12 +50,13 @@ class ElectraEncoderDecoderV2Loss(FairseqCriterion):
         self.mask_span_idx = task.mask_idx + 1
         self.warmup_interval = cfg.discriminator_warmup_steps // cfg.discriminator_weight
 
-
     def seq2seq_loss(self, model, sample, reduce, update_num=-1):
         src_lengths = sample["src_lengths"]
         targets = sample["targets"]
         masked_tokens = targets.le(self.mask_idx - 1) & targets.ne(self.padding_idx)
-        decoder_out = model(src_tokens=sample["src_tokens"], src_lengths=src_lengths, prev_output_tokens=sample["tgt_tokens"], masked_tokens=masked_tokens, targets=sample["targets"], features_only=False)
+        decoder_out = model(src_tokens=sample["src_tokens"], src_lengths=src_lengths,
+                            prev_output_tokens=sample["tgt_tokens"], masked_tokens=masked_tokens,
+                            targets=sample["targets"], features_only=False)
         sample_size = targets.ne(self.padding_idx).int().sum().detach().tolist()
 
         generator_logits = decoder_out["generator_out"][0]
@@ -65,7 +66,6 @@ class ElectraEncoderDecoderV2Loss(FairseqCriterion):
             reduction="sum",
             ignore_index=self.padding_idx,
         )
-
 
         discriminator_logits = decoder_out["discriminator_out"][0]
         input_tokens = decoder_out["input_tokens"]
@@ -88,7 +88,8 @@ class ElectraEncoderDecoderV2Loss(FairseqCriterion):
         )
         discriminator_loss = discriminator_loss * sample_size / discriminator_sample_size
 
-        discriminator_weight = min(update_num // self.warmup_interval, self.cfg.discriminator_weight) if self.warmup_interval > 0 else self.cfg.discriminator_weight
+        discriminator_weight = min(update_num // self.warmup_interval,
+                                   self.cfg.discriminator_weight) if self.warmup_interval > 0 else self.cfg.discriminator_weight
         loss = generator_loss + discriminator_weight * discriminator_loss
         with torch.no_grad():
             positive = discriminator_logits[:, 1] >= discriminator_logits[:, 0]
@@ -112,7 +113,6 @@ class ElectraEncoderDecoderV2Loss(FairseqCriterion):
             "discriminator_weight": discriminator_weight,
         }
         return loss, sample_size, logging_output
-
 
     def forward(self, model, sample, reduce=True, epoch=-1, update_num=-1):
         """Compute the loss for the given sample.

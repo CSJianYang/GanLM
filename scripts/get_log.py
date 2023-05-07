@@ -29,12 +29,12 @@ glue_lr2 = ['2e-5', '3e-5', '4e-5', '5e-5']
 squad_lr = ['2e-5', '3e-5', '4e-5']
 if args.model == 'large':
     glue_lr1 = ['5e-6', '7e-6', '1e-5', '2e-5']
-    glue_lr2 = ['7e-6', '1e-5',  '2e-5', '3e-5']
-    squad_lr = ['7e-6', '1e-5',  '2e-5', '3e-5']
+    glue_lr2 = ['7e-6', '1e-5', '2e-5', '3e-5']
+    squad_lr = ['7e-6', '1e-5', '2e-5', '3e-5']
 elif args.model == 'xlarge':
     glue_lr1 = ['3e-6', '5e-6', '7e-6', '1e-5']
-    glue_lr2 = ['5e-6', '7e-6',  '1e-5', '2e-5']
-    squad_lr = ['5e-6', '7e-6',  '1e-5', '2e-5']
+    glue_lr2 = ['5e-6', '7e-6', '1e-5', '2e-5']
+    squad_lr = ['5e-6', '7e-6', '1e-5', '2e-5']
 
 
 def mean(res):
@@ -111,8 +111,8 @@ def get_glue(f):
                         total_ret = []
                         for seed in seeds:
                             filename = prefix + '/' + folder + '/' + ckp[:-3] + '-ft/' + name + '/' + \
-                                '{0}-{1}-{2}-{3}-{4}/train_log.txt'.format(
-                                    epoch, warmup, bsz, lr, seed)
+                                       '{0}-{1}-{2}-{3}-{4}/train_log.txt'.format(
+                                           epoch, warmup, bsz, lr, seed)
                             res = get_from_file(filename, keyword, metric)
                             if res < 0:
                                 valid = False
@@ -123,6 +123,7 @@ def get_glue(f):
                         if cur_res > best_res:
                             best_res = cur_res
         return best_res, valid
+
     # names =  ['MNLI-m', 'MNLI-mm', 'QNLI', 'QQP', 'SST-2', 'CoLA', 'MRPC', 'RTE', 'STS-B']
     # tasks = ['MNLI', 'MNLI', 'QNLI', 'QQP', 'SST-2', 'CoLA', 'MRPC', 'RTE', 'STS-B']
     names = ['MNLI-m', 'MNLI-mm']
@@ -159,7 +160,7 @@ def get_glue(f):
                 if is_valid[name][exp][step]:
                     to_write.append(str(res))
                 elif res > 0:
-                    to_write.append(':'+str(res))
+                    to_write.append(':' + str(res))
                 else:
                     to_write.append('')
             f.write(','.join(to_write) + '\n')
@@ -249,8 +250,8 @@ def get_squad(f, name):
                         total_em = []
                         for seed in seeds:
                             filename = prefix + '/' + folder + '/' + ckp[:-3] + \
-                                '-ft/{5}/{0}-{1}-{2}-{3}-{4}/train_log.txt'.format(
-                                    epoch, warmup, bsz, lr, seed, name)
+                                       '-ft/{5}/{0}-{1}-{2}-{3}-{4}/train_log.txt'.format(
+                                           epoch, warmup, bsz, lr, seed, name)
                             f1, em = get_from_file(filename)
                             total_f1.append(f1)
                             total_em.append(em)
@@ -263,6 +264,7 @@ def get_squad(f, name):
                         best_f1 = max(best_f1, cur_f1)
                         best_em = max(best_em, cur_em)
         return best_f1, best_em, valid
+
     result_dict = {}
     is_valid = {}
     for folder in folders:
@@ -285,7 +287,7 @@ def get_squad(f, name):
                 if is_valid[exp][step]:
                     to_write.append(str(res))
                 else:
-                    to_write.append(':'+str(res))
+                    to_write.append(':' + str(res))
             else:
                 to_write.append('')
         f.write(','.join(to_write) + '\n')
@@ -300,7 +302,7 @@ def get_squad(f, name):
                 if is_valid[exp][step]:
                     to_write.append(str(res))
                 else:
-                    to_write.append(':'+str(res))
+                    to_write.append(':' + str(res))
             else:
                 to_write.append('')
         f.write(','.join(to_write) + '\n')
@@ -312,10 +314,11 @@ def print_summary_table(r_glue, r_squad):
     # exp_set = set(r_glue['MNLI-m'].keys()) | set(r_squad.keys())
     tb_list = []
     for exp in folders:
-        line = [exp, r_glue['MNLI-m'][exp][args.step], r_glue['MNLI-mm'][exp][args.step], r_squad[exp][args.step]['f1'], r_squad[exp][args.step]['em']]
+        line = [exp, r_glue['MNLI-m'][exp][args.step], r_glue['MNLI-mm'][exp][args.step], r_squad[exp][args.step]['f1'],
+                r_squad[exp][args.step]['em']]
         tb_list.append(line)
     print(tabulate(tb_list, headers=[
-          'Run', 'MNLI-m', 'MNLI-mm', 'SQuAD2-F1', 'SQuAD2-EM']))
+        'Run', 'MNLI-m', 'MNLI-mm', 'SQuAD2-F1', 'SQuAD2-EM']))
 
 
 with open(args.output, 'w') as f:

@@ -76,7 +76,7 @@ class UniLmLoss(FairseqCriterion):
             "sample_size": sample_size,
         }
         return loss, sample_size, logging_output
-    
+
     def seq2seq_loss(self, model, sample, reduce):
         features = model(src_tokens=sample["src_tokens"], tgt_tokens=sample["tgt_tokens"])[0]
         features = features[:, sample["src_tokens"].size(1):, :]
@@ -117,7 +117,7 @@ class UniLmLoss(FairseqCriterion):
             loss += mlm_loss
             sample_size = mlm_sample_size
             logging_outputs.update(mlm_logging_output)
-        
+
         if "seq2seq" in sample and not self.cfg.mlm_only:
             seq2seq_loss, seq2seq_sample_loss, seq2seq_logging_output = self.seq2seq_loss(
                 model, sample["seq2seq"], reduce=reduce
@@ -131,7 +131,7 @@ class UniLmLoss(FairseqCriterion):
             else:
                 logging_outputs.update(seq2seq_logging_output)
                 loss, sample_size = seq2seq_loss, seq2seq_sample_size
-        
+
         return loss, sample_size, logging_outputs
 
     @staticmethod

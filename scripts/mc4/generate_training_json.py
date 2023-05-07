@@ -3,14 +3,18 @@ import os
 import gzip
 import shutil
 import json
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--input-json', '-input-json', type=str,
                         default=r'/mnt/output/Data/deltalm/json/train.json', help='input stream')
-    parser.add_argument('--output-json', '-output-json', default="mnt/output/Data/mc4_pretrain/json/train.json", help='input stream')
+    parser.add_argument('--output-json', '-output-json', default="mnt/output/Data/mc4_pretrain/json/train.json",
+                        help='input stream')
     parser.add_argument('--data', '-data', default="/mnt/output/Data/mc4/raw_mc4/", help='input stream')
     args = parser.parse_args()
     return args
+
 
 if __name__ == "__main__":
     args = parse_args()
@@ -38,5 +42,3 @@ if __name__ == "__main__":
         #         'weight': 0,
         #     })
     json.dumps(json_text)
-
-

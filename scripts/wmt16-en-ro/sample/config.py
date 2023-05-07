@@ -2,15 +2,16 @@ import numpy
 import os
 import sys
 import logging
+from nematus.nmt import train
+
 
 VOCAB_SIZE = 90000
 SRC = "ro"
 TGT = "en"
 DATA_DIR = "data/"
 
-from nematus.nmt import train
-
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+
 
 if __name__ == '__main__':
     validerr = train(saveto='model/model.npz',
@@ -40,4 +41,4 @@ if __name__ == '__main__':
                     dropout_target=0.1, # dropout target words (0: no dropout)
                     overwrite=False,
                     external_validation_script='./validate.sh')
-    print validerr
+    print(validerr)

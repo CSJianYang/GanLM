@@ -23,14 +23,11 @@ from fairseq.tasks import LegacyFairseqTask, register_task
 from fairseq.utils import FileContentsAction
 from fairseq.data import Dictionary
 
-###
+
 def get_time_gap(s, e):
     return (
-        datetime.datetime.fromtimestamp(e) - datetime.datetime.fromtimestamp(s)
+            datetime.datetime.fromtimestamp(e) - datetime.datetime.fromtimestamp(s)
     ).__str__()
-
-
-###
 
 
 logger = logging.getLogger(__name__)
@@ -86,7 +83,6 @@ class SummarizationMultiSimpleEpochTask(LegacyFairseqTask):
         self.dictionary = self.source_dictionary
         self.mask_idx = self.dictionary.index("<mask>")
 
-
     def check_dicts(self, dicts, source_langs, target_langs):
         if self.args.source_dict is not None or self.args.target_dict is not None:
             # no need to check whether the source side and target side are sharing dictionaries
@@ -95,12 +91,12 @@ class SummarizationMultiSimpleEpochTask(LegacyFairseqTask):
         tgt_dict = dicts[target_langs[0]]
         for src_lang in source_langs:
             assert (
-                src_dict == dicts[src_lang]
+                    src_dict == dicts[src_lang]
             ), "Diffrent dictionary are specified for different source languages; "
             "TranslationMultiSimpleEpochTask only supports one shared dictionary across all source languages"
         for tgt_lang in target_langs:
             assert (
-                tgt_dict == dicts[tgt_lang]
+                    tgt_dict == dicts[tgt_lang]
             ), "Diffrent dictionary are specified for different target languages; "
             "TranslationMultiSimpleEpochTask only supports one shared dictionary across all target languages"
 
@@ -118,11 +114,10 @@ class SummarizationMultiSimpleEpochTask(LegacyFairseqTask):
         # dictionary.pad_to_multiple_(required_batch_size_multiple)
         return dictionary
 
-
     @classmethod
     def setup_task(cls, args, **kwargs):
         langs, dicts, training = MultilingualDatasetManager.prepare(
-           cls.load_dictionary, args, **kwargs
+            cls.load_dictionary, args, **kwargs
         )
         return cls(args, langs, dicts, training)
 
@@ -194,11 +189,11 @@ class SummarizationMultiSimpleEpochTask(LegacyFairseqTask):
         return dataset
 
     def build_generator(
-        self,
-        models,
-        args,
-        seq_gen_cls=None,
-        extra_gen_cls_kwargs=None,
+            self,
+            models,
+            args,
+            seq_gen_cls=None,
+            extra_gen_cls_kwargs=None,
     ):
         if not getattr(args, "keep_inference_langtok", False):
             _, tgt_langtok_spec = self.args.langtoks["main"]
@@ -221,7 +216,7 @@ class SummarizationMultiSimpleEpochTask(LegacyFairseqTask):
         return loss, sample_size, logging_output
 
     def inference_step(
-        self, generator, models, sample, prefix_tokens=None, constraints=None
+            self, generator, models, sample, prefix_tokens=None, constraints=None
     ):
         with torch.no_grad():
             _, tgt_langtok_spec = self.args.langtoks["main"]
@@ -269,13 +264,13 @@ class SummarizationMultiSimpleEpochTask(LegacyFairseqTask):
         return self.data_manager.get_target_dictionary(self.target_langs[0])
 
     def create_batch_sampler_func(
-        self,
-        max_positions,
-        ignore_invalid_inputs,
-        max_tokens,
-        max_sentences,
-        required_batch_size_multiple=1,
-        seed=1,
+            self,
+            max_positions,
+            ignore_invalid_inputs,
+            max_tokens,
+            max_sentences,
+            required_batch_size_multiple=1,
+            seed=1,
     ):
         def construct_batch_sampler(dataset, epoch):
             splits = [
@@ -332,20 +327,20 @@ class SummarizationMultiSimpleEpochTask(LegacyFairseqTask):
 
     # we need to override get_batch_iterator because we want to reset the epoch iterator each time
     def get_batch_iterator(
-        self,
-        dataset,
-        max_tokens=None,
-        max_sentences=None,
-        max_positions=None,
-        ignore_invalid_inputs=False,
-        required_batch_size_multiple=1,
-        seed=1,
-        num_shards=1,
-        shard_id=0,
-        num_workers=0,
-        epoch=1,
-        data_buffer_size=0,
-        disable_iterator_cache=False,
+            self,
+            dataset,
+            max_tokens=None,
+            max_sentences=None,
+            max_positions=None,
+            ignore_invalid_inputs=False,
+            required_batch_size_multiple=1,
+            seed=1,
+            num_shards=1,
+            shard_id=0,
+            num_workers=0,
+            epoch=1,
+            data_buffer_size=0,
+            disable_iterator_cache=False,
     ):
         """
         Get an iterator that yields batches of data from the given dataset.

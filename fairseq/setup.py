@@ -41,10 +41,8 @@ def write_version_py():
 
 version = write_version_py()
 
-
 with open("README.md") as f:
     readme = f.read()
-
 
 if sys.platform == "darwin":
     extra_compile_args = ["-stdlib=libc++", "-O3"]
@@ -93,9 +91,7 @@ extensions = [
     ),
 ]
 
-
 cmdclass = {}
-
 
 try:
     # torch is not available when generating docs
@@ -159,7 +155,6 @@ try:
 except ImportError:
     pass
 
-
 if "READTHEDOCS" in os.environ:
     # don't build extensions when generating docs
     extensions = []
@@ -173,7 +168,6 @@ if "READTHEDOCS" in os.environ:
 else:
     dependency_links = []
 
-
 if "clean" in sys.argv[1:]:
     # Source: https://bit.ly/2NLVsgE
     print("deleting Cython files...")
@@ -183,7 +177,6 @@ if "clean" in sys.argv[1:]:
         ["rm -f fairseq/*.so fairseq/**/*.so fairseq/*.pyd fairseq/**/*.pyd"],
         shell=True,
     )
-
 
 extra_packages = []
 if os.path.exists(os.path.join("fairseq", "model_parallel", "megatron", "mpu")):
@@ -238,7 +231,7 @@ def do_setup(package_data):
                 "tests.*",
             ]
         )
-        + extra_packages,
+                 + extra_packages,
         package_data=package_data,
         ext_modules=extensions,
         test_suite="tests",
@@ -279,7 +272,7 @@ if __name__ == "__main__":
 
         package_data = {
             "fairseq": (
-                get_files(fairseq_examples) + get_files(os.path.join("fairseq", "config"))
+                    get_files(fairseq_examples) + get_files(os.path.join("fairseq", "config"))
             )
         }
         do_setup(package_data)

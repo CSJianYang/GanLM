@@ -15,6 +15,7 @@ from unilm.data.squad import SquadResult, compute_predictions_logits, squad_eval
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class SquadConfig(FairseqDataclass):
     n_best_size: int = field(
@@ -27,6 +28,7 @@ class SquadConfig(FairseqDataclass):
         default=False, metadata={"help": "Squad2.0"}
     )
     save_dir: str = II("common.save_dir")
+
 
 @register_criterion('squad', dataclass=SquadConfig)
 class SquadCriterion(FairseqCriterion):
@@ -50,7 +52,6 @@ class SquadCriterion(FairseqCriterion):
         else:
             loss = torch.zeros(1, dtype=torch.float, device=features.device, requires_grad=True)
             outputs = model.classification_heads[self.head_name].forward(features, p_mask=p_mask)
-
 
         sample_size = sample['nsentences']
         logging_output = {
@@ -89,10 +90,10 @@ class SquadCriterion(FairseqCriterion):
             for i in range(start_logits.size(0)):
                 index = int(indices[i])
                 unique_id = task.eval_features[index].unique_id
-                result = SquadResult(unique_id, 
-                                    start_logits[i].float().cpu().tolist(),
-                                    end_logits[i].float().cpu().tolist(),
-                                    )
+                result = SquadResult(unique_id,
+                                     start_logits[i].float().cpu().tolist(),
+                                     end_logits[i].float().cpu().tolist(),
+                                     )
                 all_results.append(result)
 
         output_prediction_file = os.path.join(self.cfg.save_dir, "predictions.json")

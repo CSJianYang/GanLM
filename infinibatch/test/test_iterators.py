@@ -733,7 +733,7 @@ class TestWindowedIterator(TestBase, TestFiniteIteratorMixin, TestFiniteIterator
                 for i in range(len(data)):
                     if i + window_size > len(data):
                         break
-                    expected_result.append(tuple(data[i : i + window_size]))
+                    expected_result.append(tuple(data[i: i + window_size]))
                 self.test_cases.append(("n={}, window_size={}".format(n, window_size), expected_result, it))
 
 

@@ -38,6 +38,7 @@ from fairseq.modules import (
 )
 from unilm.models.unilm import LMHead, UniLMBody, UniLMModelConfig, base_unilm_architecture
 from unilm.models.unilm_encoder_decoder import UniLMEncoder, UniLMDecoder, UniLMEncoderDecoder
+
 logger = logging.getLogger(__name__)
 
 
@@ -70,8 +71,6 @@ class ElectraEncoderDecoderConfigv4(FairseqDataclass):
         default=False,
         metadata={"help": "share parameters"}
     )
-
-
 
 
 class ElectraEncoderv4(TransformerEncoderBase):
@@ -127,10 +126,8 @@ class ElectraEncoderv4(TransformerEncoderBase):
             self.generator, self.generator_lm_head = None, None
         self.classification_heads = nn.ModuleDict()
 
-
     def build_lm_head(self, args, embed_dim, output_dim, activation_fn, weight):
         return LMHead(embed_dim, output_dim, activation_fn, weight)
-
 
     def output_layer(self, features):
         return self.generator_lm_head(features)
@@ -151,8 +148,8 @@ class ElectraEncoderv4(TransformerEncoderBase):
             return self.max_target_positions
         return min(self.max_target_positions, self.discriminator.embed_positions.max_positions)
 
-
-    def forward(self, src_tokens=None, tgt_tokens=None, incremental_state=None, classification_head_name=None, masked_tokens=None, features_only=True, **kwargs):
+    def forward(self, src_tokens=None, tgt_tokens=None, incremental_state=None, classification_head_name=None,
+                masked_tokens=None, features_only=True, **kwargs):
         if classification_head_name is not None:
             x, extra = self.discriminator(src_tokens, None, incremental_state, return_all_hiddens=True)
             x = self.classification_heads[classification_head_name](x)
@@ -181,8 +178,8 @@ class ElectraEncoderv4(TransformerEncoderBase):
             input_tokens = src_tokens.clone()
             input_tokens[masked_tokens] = sampled_tokens
 
-
-        discriminator_x, discriminator_extra = self.discriminator(input_tokens, None, incremental_state, return_all_hiddens=True)
+        discriminator_x, discriminator_extra = self.discriminator(input_tokens, None, incremental_state,
+                                                                  return_all_hiddens=True)
         discriminator_logits = self.discriminator_lm_head(discriminator_x)
 
         return {
@@ -194,7 +191,6 @@ class ElectraEncoderv4(TransformerEncoderBase):
             "src_tokens": [],
             "src_lengths": [],
         }
-
 
 
 class ElectraDecoderBase(UniLMDecoder):
@@ -211,15 +207,15 @@ class ElectraDecoderBase(UniLMDecoder):
     """
 
     def __init__(
-        self,
-        cfg,
-        dictionary,
-        embed_tokens,
-        no_encoder_attn=False,
-        embed_positions=None,
-        layernorm_embedding=None,
-        layers=None,
-        output_projection=None,
+            self,
+            cfg,
+            dictionary,
+            embed_tokens,
+            no_encoder_attn=False,
+            embed_positions=None,
+            layernorm_embedding=None,
+            layers=None,
+            output_projection=None,
     ):
         self.cfg = cfg
         super(TransformerDecoderBase, self).__init__(dictionary)
@@ -315,8 +311,6 @@ class ElectraDecoderBase(UniLMDecoder):
         if getattr(cfg, 'rescale_init', False):
             self.rescale_fixup()
 
-
-
     def rescale_fixup(self):
         def rescale(param, layer_id):
             param.div_(math.sqrt(2.0 * layer_id))
@@ -342,12 +336,12 @@ class ElectraDecoderv4(UniLMDecoder):
     """
 
     def __init__(
-        self,
-        args,
-        dictionary,
-        embed_tokens,
-        no_encoder_attn=False,
-        output_projection=None,
+            self,
+            args,
+            dictionary,
+            embed_tokens,
+            no_encoder_attn=False,
+            output_projection=None,
     ):
         self.args = args
         super(TransformerDecoderBase, self).__init__(dictionary)
@@ -429,7 +423,6 @@ class ElectraDecoderv4(UniLMDecoder):
                 )
                 self.discriminator = None
 
-
     def build_lm_head(self, args, embed_dim, output_dim, activation_fn, weight):
         return LMHead(embed_dim, output_dim, activation_fn, weight)
 
@@ -481,21 +474,22 @@ class ElectraDecoderv4(UniLMDecoder):
         )
         generator_logits = generator_out[0]
         with torch.no_grad():
-            sampled_probs = torch.softmax(generator_logits.view(-1, generator_logits.size(-1))/self.args.sampling_temperature, -1, dtype=torch.float32)
+            sampled_probs = torch.softmax(
+                generator_logits.view(-1, generator_logits.size(-1)) / self.args.sampling_temperature, -1,
+                dtype=torch.float32)
             sampled_tokens = torch.multinomial(sampled_probs, 1).view(-1)
             sampled_tokens = sampled_tokens[masked_tokens.view(-1)]
             input_tokens = targets.clone()
             input_tokens[masked_tokens] = sampled_tokens
 
-
         discriminator_out = self.discriminator(
-                input_tokens,
-                encoder_out=encoder_out,
-                features_only=features_only,
-                alignment_layer=alignment_layer,
-                alignment_heads=alignment_heads,
-                src_lengths=src_lengths,
-                return_all_hiddens=return_all_hiddens
+            input_tokens,
+            encoder_out=encoder_out,
+            features_only=features_only,
+            alignment_layer=alignment_layer,
+            alignment_heads=alignment_heads,
+            src_lengths=src_lengths,
+            return_all_hiddens=return_all_hiddens
         )
         return {
             "discriminator_out": discriminator_out,
@@ -508,9 +502,6 @@ class ElectraDecoderv4(UniLMDecoder):
     def max_positions(self):
         """Maximum output length supported by the decoder."""
         return self.args.max_target_positions
-
-
-
 
 
 @register_model("electra_encoder_decoder_v4")
@@ -539,7 +530,6 @@ class ElectraEncoderDecoderv4(TransformerModel):
         self.encoder = encoder
         self.decoder = decoder
 
-
     @classmethod
     def add_args(cls, parser):
         """Add model-specific arguments to the parser."""
@@ -560,7 +550,6 @@ class ElectraEncoderDecoderv4(TransformerModel):
 
         # make sure all arguments are present in older models
         base_electra_encoder_decoder_architecture_v4(args)
-
 
         # --  TODO T96535332
         #  bug caused by interaction between OmegaConf II and argparsing
@@ -583,7 +572,7 @@ class ElectraEncoderDecoderv4(TransformerModel):
                     "--share-all-embeddings requires --encoder-embed-dim to match --decoder-embed-dim"
                 )
             if args.decoder_embed_path and (
-                args.decoder_embed_path != args.encoder_embed_path
+                    args.decoder_embed_path != args.encoder_embed_path
             ):
                 raise ValueError(
                     "--share-all-embeddings not compatible with --decoder-embed-path"
@@ -611,8 +600,6 @@ class ElectraEncoderDecoderv4(TransformerModel):
             decoder = fsdp_wrap(decoder, min_num_params=args.min_params_to_wrap)
         return cls(args, encoder, decoder)
 
-
-
     @classmethod
     def build_embedding(cls, cfg, dictionary, embed_dim, path=None):
         num_embeddings = len(dictionary)
@@ -625,13 +612,11 @@ class ElectraEncoderDecoderv4(TransformerModel):
             utils.load_embedding(embed_dict, dictionary, emb)
         return emb
 
-
     @classmethod
     def build_encoder(cls, cfg, src_dict, embed_tokens):
         wrapper_cfg = copy.deepcopy(cfg)
         wrapper_cfg.max_target_positions = wrapper_cfg.max_source_positions
         return ElectraEncoderv4(wrapper_cfg, src_dict, embed_tokens)
-
 
     @classmethod
     def build_decoder(cls, cfg, tgt_dict, embed_tokens):
@@ -642,7 +627,6 @@ class ElectraEncoderDecoderv4(TransformerModel):
             no_encoder_attn=cfg.no_cross_attention,
         )
 
-
     def upgrade_state_dict_named(self, state_dict, name):
         def upgrade_embed_tokens(k, cur_state_dict, state_dict):
             assert "encoder.embed_tokens.weight" in cur_state_dict.keys()
@@ -651,7 +635,6 @@ class ElectraEncoderDecoderv4(TransformerModel):
             cur_state_dict["encoder.embed_tokens.weight"] = state_dict[k]
             cur_state_dict["decoder.embed_tokens.weight"] = state_dict[k]
             cur_state_dict["decoder.output_projection.weight"] = state_dict[k]
-
 
         def upgrade_position_embed(k, cur_state_dict, state_dict, prefix, new_prefix="encoder", max_positions=-1):
             if max_positions == -1:
@@ -664,16 +647,14 @@ class ElectraEncoderDecoderv4(TransformerModel):
                 logger.info(f"{k} | Clipping {max_positions} -> {state_dict[k].size(0)} positions (start from 2th pos)")
                 cur_state_dict[k.replace(prefix, new_prefix)][: state_dict[k].size(0)] = state_dict[k]
 
-
         def upgrade_layer(k, cur_state_dict, state_dict, prefix, new_prefix="encoder"):
             if k.replace(prefix, new_prefix) not in cur_state_dict.keys():
                 logger.info(f"Missing Keys: {k}")
             assert k.replace(prefix, new_prefix) in cur_state_dict.keys()
             cur_state_dict[k.replace(prefix, new_prefix)] = state_dict[k]
 
-
         cur_state_dict = self.state_dict()
-        if "discriminator.embed_tokens.weight" in state_dict.keys(): # Electra
+        if "discriminator.embed_tokens.weight" in state_dict.keys():  # Electra
             prefix = "discriminator"
             for k in state_dict.keys():
                 if k.startswith(prefix):
@@ -706,12 +687,13 @@ class ElectraEncoderDecoderv4(TransformerModel):
                     elif k.startswith(f'{prefix}.layernorm_embedding'):
                         upgrade_layer(k, cur_state_dict, state_dict, prefix=prefix, new_prefix="decoder")
                     elif k.startswith(f'{prefix}.decoder_layers'):
-                        upgrade_layer(k, cur_state_dict, state_dict, prefix=f"{prefix}.decoder_layers", new_prefix="decoder.layers")
+                        upgrade_layer(k, cur_state_dict, state_dict, prefix=f"{prefix}.decoder_layers",
+                                      new_prefix="decoder.layers")
                 logger.info(f"Upgrading MAE Decoder for Decoder of UniLMEncoderDecoder")
             state_dict.clear()
             for k, v in cur_state_dict.items():
                 state_dict[k] = v
-        elif "body.embed_tokens.weight" in state_dict.keys(): # MLM
+        elif "body.embed_tokens.weight" in state_dict.keys():  # MLM
             prefix = "body"
             for k in state_dict.keys():
                 if k.startswith(f'{prefix}.embed_tokens'):
@@ -736,23 +718,33 @@ class ElectraEncoderDecoderv4(TransformerModel):
                 state_dict.pop("encoder.embed_tokens.weight")
             if self.args.initialization_strategy == "discriminator":
                 if "encoder.discriminator.embed_positions.weight" in state_dict.keys() and self.args.encoder_learned_pos:
-                    upgrade_position_embed("encoder.discriminator.embed_positions.weight", state_dict, state_dict, prefix="encoder", new_prefix="encoder", max_positions=self.args.max_source_positions + 2)
+                    upgrade_position_embed("encoder.discriminator.embed_positions.weight", state_dict, state_dict,
+                                           prefix="encoder", new_prefix="encoder",
+                                           max_positions=self.args.max_source_positions + 2)
                 if "decoder.discriminator.embed_positions.weight" in state_dict.keys() and self.args.decoder_learned_pos:
-                    upgrade_position_embed("decoder.discriminator.embed_positions.weight", state_dict, state_dict, prefix="decoder", new_prefix="decoder", max_positions=self.args.max_target_positions + 2)
+                    upgrade_position_embed("decoder.discriminator.embed_positions.weight", state_dict, state_dict,
+                                           prefix="decoder", new_prefix="decoder",
+                                           max_positions=self.args.max_target_positions + 2)
                 for k in state_dict.keys():
-                    if not k.startswith("decoder.generator.") and not k.startswith("decoder.discriminator.output_projection"):
+                    if not k.startswith("decoder.generator.") and not k.startswith(
+                            "decoder.discriminator.output_projection"):
                         assert k in cur_state_dict, k
                         cur_state_dict[k] = state_dict[k]
-                cur_state_dict['decoder.discriminator.output_projection.weight'] = state_dict["decoder.discriminator.embed_tokens.weight"] #share all embeddings
+                cur_state_dict['decoder.discriminator.output_projection.weight'] = state_dict[
+                    "decoder.discriminator.embed_tokens.weight"]  # share all embeddings
                 state_dict.clear()
                 for k, v in cur_state_dict.items():
                     state_dict[k] = v
                 logger.info("Directly Loading Checkpoint without Any Change | Deleting Generator")
             elif self.args.initialization_strategy == "generator":
                 if "encoder.discriminator.embed_positions.weight" in state_dict.keys() and self.args.encoder_learned_pos:
-                    upgrade_position_embed("encoder.discriminator.embed_positions.weight", state_dict, state_dict, prefix="encoder", new_prefix="encoder", max_positions=self.args.max_source_positions + 2)
+                    upgrade_position_embed("encoder.discriminator.embed_positions.weight", state_dict, state_dict,
+                                           prefix="encoder", new_prefix="encoder",
+                                           max_positions=self.args.max_source_positions + 2)
                 if "decoder.generator.embed_positions.weight" in state_dict.keys() and self.args.decoder_learned_pos:
-                    upgrade_position_embed("decoder.generator.embed_positions.weight", state_dict, state_dict, prefix="decoder", new_prefix="decoder", max_positions=self.args.max_target_positions + 2)
+                    upgrade_position_embed("decoder.generator.embed_positions.weight", state_dict, state_dict,
+                                           prefix="decoder", new_prefix="decoder",
+                                           max_positions=self.args.max_target_positions + 2)
                 for k in state_dict.keys():
                     if not k.startswith("decoder.discriminator."):
                         assert k in cur_state_dict, k
@@ -765,18 +757,17 @@ class ElectraEncoderDecoderv4(TransformerModel):
             logger.info(f"Directly Loading without any change")
         return state_dict
 
-
     def forward(
-        self,
-        src_tokens,
-        src_lengths,
-        prev_output_tokens,
-        return_all_hiddens: bool = True,
-        features_only: bool = True,
-        alignment_layer: Optional[int] = None,
-        alignment_heads: Optional[int] = None,
-        masked_tokens=None,
-        targets=None
+            self,
+            src_tokens,
+            src_lengths,
+            prev_output_tokens,
+            return_all_hiddens: bool = True,
+            features_only: bool = True,
+            alignment_layer: Optional[int] = None,
+            alignment_heads: Optional[int] = None,
+            masked_tokens=None,
+            targets=None
     ):
         """
         Run the forward pass for an encoder-decoder model.
@@ -813,7 +804,7 @@ def electra_encoder_decoder_architecture_v4(args):
     args.encoder_learned_pos = getattr(args, "encoder_learned_pos", True)
     args.decoder_embed_path = getattr(args, "decoder_embed_path", None)
     args.decoder_embed_dim = getattr(args, "decoder_embed_dim", args.encoder_embed_dim)
-    args.decoder_ffn_embed_dim = getattr(args, "decoder_ffn_embed_dim", args.encoder_ffn_embed_dim )
+    args.decoder_ffn_embed_dim = getattr(args, "decoder_ffn_embed_dim", args.encoder_ffn_embed_dim)
     args.decoder_layers = getattr(args, "decoder_layers", 12)
     args.decoder_attention_heads = getattr(args, "decoder_attention_heads", 12)
     args.decoder_normalize_before = getattr(args, "decoder_normalize_before", False)
@@ -851,9 +842,9 @@ def electra_encoder_decoder_architecture_v4(args):
     args.generator_encoder_layers = getattr(args, "generator_encoder_layers", 4)
     args.max_source_positions = getattr(args, "max_source_positions", 512)
     args.max_target_positions = getattr(args, "max_target_positions", 512)
-    #v4
-    #args.scale_fc = True
-    base_unilm_architecture(args) #Compatibile for UniLMBody
+    # v4
+    # args.scale_fc = True
+    base_unilm_architecture(args)  # Compatibile for UniLMBody
 
 
 @register_model_architecture("electra_encoder_decoder_v4", "electra_encoder_decoder_v4_base")

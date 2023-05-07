@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 set -ex
 
 TASK=$1

@@ -79,7 +79,7 @@ def main(args):
 
     if args.joined_dictionary:
         assert (
-            not args.srcdict or not args.tgtdict
+                not args.srcdict or not args.tgtdict
         ), "cannot use both --srcdict and --tgtdict with --joined-dictionary"
 
         if args.srcdict:
@@ -141,7 +141,7 @@ def main(args):
         if num_workers > 1:
             pool = Pool(processes=num_workers - 1)
             for worker_id, (start_offset, end_offset) in enumerate(
-                more_chunks, start=1
+                    more_chunks, start=1
             ):
                 prefix = "{}{}".format(output_prefix, worker_id)
                 pool.apply_async(
@@ -208,7 +208,7 @@ def main(args):
         if num_workers > 1:
             pool = Pool(processes=num_workers - 1)
             for worker_id, (start_offset, end_offset) in enumerate(
-                more_chunks, start=1
+                    more_chunks, start=1
             ):
                 prefix = "{}{}".format(output_prefix, worker_id)
                 pool.apply_async(
@@ -335,12 +335,12 @@ def main(args):
             align_dict[srcidx] = max(freq_map[srcidx], key=freq_map[srcidx].get)
 
         with open(
-            os.path.join(
-                args.destdir,
-                "alignment.{}-{}.txt".format(args.source_lang, args.target_lang),
-            ),
-            "w",
-            encoding="utf-8",
+                os.path.join(
+                    args.destdir,
+                    "alignment.{}-{}.txt".format(args.source_lang, args.target_lang),
+                ),
+                "w",
+                encoding="utf-8",
         ) as f:
             for k, v in align_dict.items():
                 print("{} {}".format(src_dict[k], tgt_dict[v]), file=f)

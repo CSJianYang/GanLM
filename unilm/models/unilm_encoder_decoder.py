@@ -70,7 +70,7 @@ class UniLMEncoder(UniLMBody):
             tgt_tokens=None,
             incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
             return_all_hiddens: bool = False,
-            src_lengths = None
+            src_lengths=None
     ):
         # embed positions
         positions = None
@@ -162,7 +162,6 @@ class UniLMEncoder(UniLMBody):
             "src_lengths": [src_lengths],
         }
 
-
     @torch.jit.export
     def reorder_encoder_out(self, encoder_out: Dict[str, List[Tensor]], new_order):
         """
@@ -217,7 +216,6 @@ class UniLMEncoder(UniLMBody):
         }
 
 
-
 class UniLMDecoder(TransformerDecoderBase):
     """
     Transformer decoder consisting of *cfg.decoder.layers* layers. Each layer
@@ -232,12 +230,12 @@ class UniLMDecoder(TransformerDecoderBase):
     """
 
     def __init__(
-        self,
-        cfg,
-        dictionary,
-        embed_tokens,
-        no_encoder_attn=False,
-        output_projection=None,
+            self,
+            cfg,
+            dictionary,
+            embed_tokens,
+            no_encoder_attn=False,
+            output_projection=None,
     ):
         self.cfg = cfg
         super(TransformerDecoderBase, self).__init__(dictionary)
@@ -322,13 +320,11 @@ class UniLMDecoder(TransformerDecoderBase):
             self.build_output_projection(cfg, dictionary, embed_tokens)
 
 
-
 @dataclass
 class UniEncoderDecoderConfig(FairseqDataclass):
     initialization_strategy: ChoiceEnum(["mae_encoder2decoder", "mae_decoder2decoder", "mlm_encoder2decoder"]) = field(
         default=None, metadata={"help": "initialization strategy"}
     )
-
 
 
 @register_model("unilm_encoder_decoder")
@@ -357,7 +353,6 @@ class UniLMEncoderDecoder(TransformerModel):
         self.encoder = encoder
         self.decoder = decoder
 
-
     @classmethod
     def add_args(cls, parser):
         """Add model-specific arguments to the parser."""
@@ -380,7 +375,6 @@ class UniLMEncoderDecoder(TransformerModel):
         # make sure all arguments are present in older models
         base_unilm_encoder_decoder_architecture(args)
 
-
         # --  TODO T96535332
         #  bug caused by interaction between OmegaConf II and argparsing
         args.decoder_input_dim = int(args.decoder_input_dim)
@@ -402,7 +396,7 @@ class UniLMEncoderDecoder(TransformerModel):
                     "--share-all-embeddings requires --encoder-embed-dim to match --decoder-embed-dim"
                 )
             if args.decoder_embed_path and (
-                args.decoder_embed_path != args.encoder_embed_path
+                    args.decoder_embed_path != args.encoder_embed_path
             ):
                 raise ValueError(
                     "--share-all-embeddings not compatible with --decoder-embed-path"
@@ -430,7 +424,6 @@ class UniLMEncoderDecoder(TransformerModel):
             decoder = fsdp_wrap(decoder, min_num_params=args.min_params_to_wrap)
         return cls(args, encoder, decoder)
 
-
     @classmethod
     def build_embedding(cls, cfg, dictionary, embed_dim, path=None):
         num_embeddings = len(dictionary)
@@ -443,13 +436,11 @@ class UniLMEncoderDecoder(TransformerModel):
             utils.load_embedding(embed_dict, dictionary, emb)
         return emb
 
-
     @classmethod
     def build_encoder(cls, cfg, src_dict, embed_tokens):
         wrapper_cfg = copy.deepcopy(cfg)
         wrapper_cfg.max_target_positions = wrapper_cfg.max_source_positions
         return UniLMEncoder(wrapper_cfg, src_dict, embed_tokens)
-
 
     @classmethod
     def build_decoder(cls, cfg, tgt_dict, embed_tokens):
@@ -460,7 +451,6 @@ class UniLMEncoderDecoder(TransformerModel):
             no_encoder_attn=cfg.no_cross_attention,
         )
 
-
     def upgrade_state_dict_named(self, state_dict, name):
         def upgrade_embed_tokens(k, cur_state_dict, state_dict):
             assert "encoder.embed_tokens.weight" in cur_state_dict.keys()
@@ -469,7 +459,6 @@ class UniLMEncoderDecoder(TransformerModel):
             cur_state_dict["encoder.embed_tokens.weight"] = state_dict[k]
             cur_state_dict["decoder.embed_tokens.weight"] = state_dict[k]
             cur_state_dict["decoder.output_projection.weight"] = state_dict[k]
-
 
         def upgrade_position_embed(k, cur_state_dict, state_dict, prefix, new_prefix="encoder", max_positions=-1):
             if max_positions == -1:
@@ -482,17 +471,14 @@ class UniLMEncoderDecoder(TransformerModel):
                 logger.info(f"Clipping {max_positions} -> {state_dict[k].size(0)} positions (start from 2th pos)")
                 cur_state_dict[k.replace(prefix, new_prefix)][: state_dict[k].size(0)] = state_dict[k]
 
-
-
         def upgrade_layer(k, cur_state_dict, state_dict, prefix, new_prefix="encoder"):
             if k.replace(prefix, new_prefix) not in cur_state_dict.keys():
                 logger.info(f"Missing Keys: {k}")
             assert k.replace(prefix, new_prefix) in cur_state_dict.keys()
             cur_state_dict[k.replace(prefix, new_prefix)] = state_dict[k]
 
-
         cur_state_dict = self.state_dict()
-        if "discriminator.embed_tokens.weight" in state_dict.keys(): # Electra
+        if "discriminator.embed_tokens.weight" in state_dict.keys():  # Electra
             prefix = "discriminator"
             for k in state_dict.keys():
                 if k.startswith(prefix):
@@ -525,12 +511,13 @@ class UniLMEncoderDecoder(TransformerModel):
                     elif k.startswith(f'{prefix}.layernorm_embedding'):
                         upgrade_layer(k, cur_state_dict, state_dict, prefix=prefix, new_prefix="decoder")
                     elif k.startswith(f'{prefix}.decoder_layers'):
-                        upgrade_layer(k, cur_state_dict, state_dict, prefix=f"{prefix}.decoder_layers", new_prefix="decoder.layers")
+                        upgrade_layer(k, cur_state_dict, state_dict, prefix=f"{prefix}.decoder_layers",
+                                      new_prefix="decoder.layers")
                 logger.info(f"Upgrading MAE Decoder for Decoder of UniLMEncoderDecoder")
             state_dict.clear()
             for k, v in cur_state_dict.items():
                 state_dict[k] = v
-        elif "body.embed_tokens.weight" in state_dict.keys(): # MLM
+        elif "body.embed_tokens.weight" in state_dict.keys():  # MLM
             prefix = "body"
             for k in state_dict.keys():
                 if k.startswith(f'{prefix}.embed_tokens'):
@@ -552,22 +539,23 @@ class UniLMEncoderDecoder(TransformerModel):
                 state_dict[k] = v
         else:
             if "encoder.embed_positions.weight" in state_dict.keys() and self.args.encoder_learned_pos:
-                upgrade_position_embed("encoder.embed_positions.weight", state_dict, state_dict, prefix="encoder", new_prefix="encoder", max_positions=self.args.max_source_positions + 2)
+                upgrade_position_embed("encoder.embed_positions.weight", state_dict, state_dict, prefix="encoder",
+                                       new_prefix="encoder", max_positions=self.args.max_source_positions + 2)
             if "decoder.embed_positions.weight" in state_dict.keys() and self.args.decoder_learned_pos:
-                upgrade_position_embed("decoder.embed_positions.weight", state_dict, state_dict, prefix="decoder", new_prefix="decoder", max_positions=self.args.max_target_positions + 2)
+                upgrade_position_embed("decoder.embed_positions.weight", state_dict, state_dict, prefix="decoder",
+                                       new_prefix="decoder", max_positions=self.args.max_target_positions + 2)
             logger.info("Directly Loading Checkpoint without Any Change")
         return state_dict
 
-
     def forward(
-        self,
-        src_tokens,
-        src_lengths,
-        prev_output_tokens,
-        return_all_hiddens: bool = True,
-        features_only: bool = False,
-        alignment_layer: Optional[int] = None,
-        alignment_heads: Optional[int] = None,
+            self,
+            src_tokens,
+            src_lengths,
+            prev_output_tokens,
+            return_all_hiddens: bool = True,
+            features_only: bool = False,
+            alignment_layer: Optional[int] = None,
+            alignment_heads: Optional[int] = None,
     ):
         """
         Run the forward pass for an encoder-decoder model.
@@ -602,7 +590,7 @@ def base_unilm_encoder_decoder_architecture(args):
     args.encoder_learned_pos = getattr(args, "encoder_learned_pos", True)
     args.decoder_embed_path = getattr(args, "decoder_embed_path", None)
     args.decoder_embed_dim = getattr(args, "decoder_embed_dim", args.encoder_embed_dim)
-    args.decoder_ffn_embed_dim = getattr(args, "decoder_ffn_embed_dim", args.encoder_ffn_embed_dim )
+    args.decoder_ffn_embed_dim = getattr(args, "decoder_ffn_embed_dim", args.encoder_ffn_embed_dim)
     args.decoder_layers = getattr(args, "decoder_layers", 12)
     args.decoder_attention_heads = getattr(args, "decoder_attention_heads", 12)
     args.decoder_normalize_before = getattr(args, "decoder_normalize_before", False)
@@ -637,7 +625,7 @@ def base_unilm_encoder_decoder_architecture(args):
     args.quant_noise_pq_block_size = getattr(args, "quant_noise_pq_block_size", 0)
     args.quant_noise_scalar = getattr(args, "quant_noise_scalar", 0)
     args.initialization_strategy = getattr(args, "initialization_strategy", None)
-    base_unilm_architecture(args) #Compatibile for UniLMBody
+    base_unilm_architecture(args)  # Compatibile for UniLMBody
 
 
 @register_model_architecture("unilm_encoder_decoder", "unilm_encoder_decoder_large")

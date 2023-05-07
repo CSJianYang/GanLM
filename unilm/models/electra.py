@@ -33,9 +33,11 @@ DEFAULT_MAX_TARGET_POSITIONS = 1024
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class ElectraModelConfig(UniLMModelConfig):
     generator_encoder_layers: int = field(default=6, metadata={"help": "num generator's encoder layers"})
+
 
 @register_model("electra", dataclass=ElectraModelConfig)
 class ElectraModel(UniLMModel):
@@ -61,22 +63,22 @@ class ElectraModel(UniLMModel):
         )
 
         embed_tokens = cls.build_embedding(
-            args, 
-            task.source_dictionary, 
+            args,
+            task.source_dictionary,
             args.encoder_input_dim
         )
 
         discriminator = UniLMBody(
-            args, 
-            task.source_dictionary, 
+            args,
+            task.source_dictionary,
             embed_tokens
         )
 
         discriminator_lm_head = cls.build_lm_head(
-            args, 
-            args.encoder_embed_dim, 
-            2, 
-            args.activation_fn, 
+            args,
+            args.encoder_embed_dim,
+            2,
+            args.activation_fn,
             weight=None
         )
 
@@ -90,26 +92,26 @@ class ElectraModel(UniLMModel):
             generator_args.task_moe = False
 
             generator = UniLMBody(
-                generator_args, 
-                task.source_dictionary, 
+                generator_args,
+                task.source_dictionary,
                 embed_tokens
             )
 
             generator_lm_head = cls.build_lm_head(
-                generator_args, 
-                generator_args.encoder_embed_dim, 
-                len(task.dictionary), 
-                generator_args.activation_fn, 
+                generator_args,
+                generator_args.encoder_embed_dim,
+                len(task.dictionary),
+                generator_args.activation_fn,
                 weight=embed_tokens.weight
             )
         else:
             generator, generator_lm_head = None, None
 
         return cls(args, discriminator, discriminator_lm_head, generator, generator_lm_head)
-    
+
     def output_layer(self, features):
         return self.generator_lm_head(features)
-    
+
     def upgrade_state_dict_named(self, state_dict, name):
         super().upgrade_state_dict_named(state_dict, name)
         if self.generator is None:
@@ -120,16 +122,17 @@ class ElectraModel(UniLMModel):
             for k in keys_to_delete:
                 del state_dict[k]
 
-    def forward(self, src_tokens=None, tgt_tokens=None, incremental_state=None, classification_head_name=None, masked_tokens=None, features_only=False, **kwargs):
+    def forward(self, src_tokens=None, tgt_tokens=None, incremental_state=None, classification_head_name=None,
+                masked_tokens=None, features_only=False, **kwargs):
         if classification_head_name is not None:
             x, extra = self.discriminator(src_tokens, None, incremental_state, return_all_hiddens=True)
             x = self.classification_heads[classification_head_name](x)
             return x, extra
-        
+
         if tgt_tokens is not None or features_only:
             x, extra = self.discriminator(src_tokens, tgt_tokens, incremental_state, return_all_hiddens=True)
             return x, extra
-        
+
         generator_x, generator_extra = self.generator(src_tokens, None, incremental_state, return_all_hiddens=True)
         generator_logits = self.generator_lm_head(generator_x, masked_tokens=masked_tokens)
 
@@ -138,8 +141,9 @@ class ElectraModel(UniLMModel):
             sampled_tokens = torch.multinomial(sampled_probs, 1).view(-1)
             input_tokens = src_tokens.clone()
             input_tokens[masked_tokens] = sampled_tokens
-        
-        discriminator_x, discriminator_extra = self.discriminator(input_tokens, None, incremental_state, return_all_hiddens=True)
+
+        discriminator_x, discriminator_extra = self.discriminator(input_tokens, None, incremental_state,
+                                                                  return_all_hiddens=True)
         discriminator_logits = self.discriminator_lm_head(discriminator_x)
 
         return input_tokens, generator_logits, discriminator_logits, generator_extra, discriminator_extra

@@ -6,6 +6,7 @@ import torch
 from infinibatch.iterators import CheckpointableIterator
 from unilm.data import utils
 
+
 class BaseBatchGen(CheckpointableIterator):
     """
     This is a base class for batch generators that use infinibatch
@@ -23,7 +24,7 @@ class BaseBatchGen(CheckpointableIterator):
         Build infinibatch iterator and assign to self._iter
         """
         raise NotImplementedError()
-    
+
     def _move_to_tensor(self, batch):
 
         def to_tensor(x):
@@ -44,21 +45,21 @@ class BaseBatchGen(CheckpointableIterator):
 
     def __next__(self):
         return next(self._iter)
-    
+
     def setstate(self, value):
         self._iter.setstate(value)
-    
+
     def getstate(self):
         return self._iter.getstate()
-    
+
     def close(self):
         self._iter.close()
-    
+
     def __len__(self) -> int:
         return 819200000
 
     def next_epoch_itr(
-        self, shuffle=True, fix_batches_to_gpus=False, set_dataset_epoch=True
+            self, shuffle=True, fix_batches_to_gpus=False, set_dataset_epoch=True
     ):
         return self
 

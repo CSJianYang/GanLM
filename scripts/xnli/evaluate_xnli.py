@@ -1,11 +1,13 @@
 from fairseq import checkpoint_utils
 import sys
 import os
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
 from unilm.models.electra_encoder_decoder_v6 import ElectraEncoderDecoderv6
 import tqdm
 import argparse
 from fairseq.data import data_utils, FairseqDataset, Dictionary
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -32,24 +34,26 @@ def calculate_accuacy(model, filename, lg):
         with open("{}.input1".format(filename)) as input1_f:
             with open("{}.label".format(filename)) as label_f:
                 for index, (sent1, sent2, label) in tqdm.tqdm(enumerate(zip(input0_f, input1_f, label_f))):
-                    sent1=sent1.strip()
-                    sent2=sent2.strip()
-                    label=label.strip()
+                    sent1 = sent1.strip()
+                    sent2 = sent2.strip()
+                    label = label.strip()
                     tokens, prev_tokens = model.encode_tokenized(vocab, sent1, sent2)
-                    prediction = model.predict('sentence_classification_head', tokens=tokens, prev_tokens=prev_tokens).argmax().item()
+                    prediction = model.predict('sentence_classification_head', tokens=tokens,
+                                               prev_tokens=prev_tokens).argmax().item()
                     prediction_label = label_map[prediction]
                     ncorrect += int(prediction_label == label)
                     nsamples += 1
-    print('{} | Accuracy: '.format(lg), float(ncorrect)/float(nsamples))
+    print('{} | Accuracy: '.format(lg), float(ncorrect) / float(nsamples))
+
 
 if __name__ == "__main__":
-    args=parse_args()
+    args = parse_args()
     vocab = Dictionary.load(args.vocab_path)
     vocab.add_symbol("<mask>")
     for i in range(100):
         vocab.add_symbol(f"<mask_{i}>")
-    #vocab.pad_to_multiple_(padding_factor=8)
-    lgs=args.lgs.split()
+    # vocab.pad_to_multiple_(padding_factor=8)
+    lgs = args.lgs.split()
     state = checkpoint_utils.load_checkpoint_to_cpu(args.ckpt_path)
     model = ElectraEncoderDecoderv6.build_model(state["cfg"].model, src_dict=vocab, tgt_dict=vocab)
     model.register_classification_head(

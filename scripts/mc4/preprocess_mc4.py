@@ -3,16 +3,21 @@ import os
 import gzip
 import shutil
 import json
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dir', '-dir', type=str,
                         default=r'/mnt/output/Data/multilingual/', help='input stream')
-    parser.add_argument('--decompress-dir', '-decompress-dir', default="/mnt/output/Data/mc4/decompress_mc4/", help='input stream')
+    parser.add_argument('--decompress-dir', '-decompress-dir', default="/mnt/output/Data/mc4/decompress_mc4/",
+                        help='input stream')
     parser.add_argument('--new-dir', '-new-dir', default="/mnt/output/Data/mc4/raw_mc4/", help='input stream')
     parser.add_argument('--lg', '-lg', default="en", help='input stream')
     parser.add_argument('--index', '-index', default="0-500", help='input stream')
     args = parser.parse_args()
     return args
+
+
 if __name__ == "__main__":
     args = parse_args()
     file_names = os.listdir(args.dir)

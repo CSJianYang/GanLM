@@ -11,6 +11,7 @@ import copy
 import math
 from omegaconf import DictConfig, OmegaConf
 import logging
+
 logger = logging.getLogger(__name__)
 from infinibatch import iterators
 from unilm.data.basic_loader import BaseBatchGen
@@ -54,37 +55,36 @@ class MLMLoader(BaseBatchGen):
         self.shard_id = shard_id
 
         self.batch_read_ahead = args.batch_read_ahead
-        #Denosing Autoencoder
+        # Denosing Autoencoder
         self.mask_whole_word = None
         self.mask_idx = self.dictionary.index("<mask>")
         if getattr(args, "_name", None) == "denoising_pretraining" and args.mask_length == "span-poisson":
-                _lambda = args.poisson_lambda
-                lambda_to_the_k = 1
-                e_to_the_minus_lambda = math.exp(-_lambda)
-                k_factorial = 1
-                ps = []
-                for k in range(0, 128):
-                    ps.append(e_to_the_minus_lambda * lambda_to_the_k / k_factorial)
-                    lambda_to_the_k *= _lambda
-                    k_factorial *= k + 1
-                    if ps[-1] < 0.0000001:
-                        break
-                ps = torch.FloatTensor(ps)
-                self.mask_span_distribution = torch.distributions.Categorical(ps)
+            _lambda = args.poisson_lambda
+            lambda_to_the_k = 1
+            e_to_the_minus_lambda = math.exp(-_lambda)
+            k_factorial = 1
+            ps = []
+            for k in range(0, 128):
+                ps.append(e_to_the_minus_lambda * lambda_to_the_k / k_factorial)
+                lambda_to_the_k *= _lambda
+                k_factorial *= k + 1
+                if ps[-1] < 0.0000001:
+                    break
+            ps = torch.FloatTensor(ps)
+            self.mask_span_distribution = torch.distributions.Categorical(ps)
         else:
             self.mask_span_distribution = None
         #################
         self._build_iter()
 
-
     def _build_iter(self):
         tokenized_lines = self._multilingual_tokenize()
         self.padded_batches = self._batchify(tokenized_lines)
-        
+
         prefetch_batches = iterators.PrefetchIterator(
-            self.padded_batches, 
-            buffer_size=10000, 
-            buffer_in_main_process=True, 
+            self.padded_batches,
+            buffer_size=10000,
+            buffer_in_main_process=True,
             log_empty_buffer_warning=True and self.shard_id == 0,
         )
 
@@ -93,7 +93,6 @@ class MLMLoader(BaseBatchGen):
         )
 
         self._iter = prefetch_batches
-
 
     def _multilingual_tokenize(self):
         multilingual_iters = []
@@ -107,14 +106,14 @@ class MLMLoader(BaseBatchGen):
                 weights.append(float(data['weight']))
             else:
                 weights.append(int(data['count']))
-        
+
         if len(multilingual_iters) == 1:
             return multilingual_iters[0]
 
         sampling_iterator = WeightIterator(weights, self.seed)
         control_iterator = NativeCheckpointableIterator(sampling_iterator)
         tokenized_lines = iterators.MultiplexIterator(control_iterator, multilingual_iters)
-        
+
         return tokenized_lines
 
     def _tokenize(self, data):
@@ -129,37 +128,36 @@ class MLMLoader(BaseBatchGen):
         }
         '''
         dataset = list(
-                zip(
-                    data['source'],
-                    itertools.repeat(data['source_lang']), 
-                )
+            zip(
+                data['source'],
+                itertools.repeat(data['source_lang']),
+            )
         )
 
         if self.shuffle:
             chunk_files = \
                 iterators.InfinitePermutationSourceIterator(
                     dataset,
-                    seed=self.seed, 
-                    shuffle=self.shuffle, 
-                    num_instances=self.num_shards, 
+                    seed=self.seed,
+                    shuffle=self.shuffle,
+                    num_instances=self.num_shards,
                     instance_rank=self.shard_id,
                 )
         else:
             chunk_files = \
                 iterators.ChunkedSourceIterator(
                     dataset,
-                    num_instances=self.num_shards, 
+                    num_instances=self.num_shards,
                     instance_rank=self.shard_id,
                 )
-        
+
         tokenized_lines = iterators.SelectManyIterator(chunk_files, lambda files: self._read_from_files(*files))
         tokenized_lines = iterators.SamplingRandomMapIterator(tokenized_lines, self._prepare, self.seed)
-        
+
         return tokenized_lines
 
-
     def _batchify(self, lines):
-        
+
         if self.max_sentences is not None:
             if self.batch_read_ahead > 0:
                 lines = iterators.BlockwiseShuffleIterator(lines, self.batch_read_ahead, self.seed)
@@ -167,16 +165,17 @@ class MLMLoader(BaseBatchGen):
         else:
             def dynamic_batch_size(sample):
                 lengths = [len(x) for x in sample]
-                batch_size = self.max_tokens // max(lengths) // self.required_batch_size_multiple * self.required_batch_size_multiple
+                batch_size = self.max_tokens // max(
+                    lengths) // self.required_batch_size_multiple * self.required_batch_size_multiple
                 return max(1, batch_size)
-            
+
             batches = iterators.BucketedReadaheadBatchIterator(
-                    lines,
-                    read_ahead=self.batch_read_ahead, 
-                    key=(lambda x: max(len(x[0]), len(x[1]))) if self.shuffle else None, 
-                    batch_size=dynamic_batch_size, 
-                    shuffle=self.shuffle,
-                    seed=self.seed,
+                lines,
+                read_ahead=self.batch_read_ahead,
+                key=(lambda x: max(len(x[0]), len(x[1]))) if self.shuffle else None,
+                batch_size=dynamic_batch_size,
+                shuffle=self.shuffle,
+                seed=self.seed,
             )
 
         def collate(batch):
@@ -188,26 +187,25 @@ class MLMLoader(BaseBatchGen):
             s2s_target_max_length = max([len(x[3]) for x in batch])
 
             mlm_source_ids = np.full(shape=(batch_size, mlm_source_max_length), dtype=np.int32,
-                                 fill_value=self.dictionary.pad())
+                                     fill_value=self.dictionary.pad())
             mlm_target_ids = np.full(shape=(batch_size, mlm_target_max_length), dtype=np.int32,
                                      fill_value=self.dictionary.pad())
             s2s_source_ids = np.full(shape=(batch_size, s2s_source_max_length), dtype=np.int32,
-                                 fill_value=self.dictionary.pad())
-            s2s_target_ids = np.full(shape=(batch_size, s2s_target_max_length-1), dtype=np.int32,
                                      fill_value=self.dictionary.pad())
-            s2s_prev_input_ids = np.full(shape=(batch_size, s2s_target_max_length-1), dtype=np.int32,
+            s2s_target_ids = np.full(shape=(batch_size, s2s_target_max_length - 1), dtype=np.int32,
                                      fill_value=self.dictionary.pad())
+            s2s_prev_input_ids = np.full(shape=(batch_size, s2s_target_max_length - 1), dtype=np.int32,
+                                         fill_value=self.dictionary.pad())
             #
             non_last_token_s2s_target_ids = np.full(shape=(batch_size, s2s_target_max_length - 1), dtype=np.int32,
-                                     fill_value=self.dictionary.pad())
+                                                    fill_value=self.dictionary.pad())
             for i, (mlm_input_ids, mlm_label_ids, s2s_input_ids, s2s_label_ids) in enumerate(batch):
                 mlm_source_ids[i, :len(mlm_input_ids)] = mlm_input_ids
                 mlm_target_ids[i, :len(mlm_label_ids)] = mlm_label_ids
                 s2s_source_ids[i, :len(s2s_input_ids)] = s2s_input_ids
-                s2s_target_ids[i, :len(s2s_label_ids)-1] = s2s_label_ids[1:]
-                s2s_prev_input_ids[i, :len(s2s_label_ids)-1] = s2s_label_ids[:-1]
-                non_last_token_s2s_target_ids[i, :len(s2s_label_ids)-2] = s2s_label_ids[1:-1]
-
+                s2s_target_ids[i, :len(s2s_label_ids) - 1] = s2s_label_ids[1:]
+                s2s_prev_input_ids[i, :len(s2s_label_ids) - 1] = s2s_label_ids[:-1]
+                non_last_token_s2s_target_ids[i, :len(s2s_label_ids) - 2] = s2s_label_ids[1:-1]
 
             if getattr(self.args, "debug", False):
                 logger.info(f"{self.dictionary.string(s2s_source_ids)}")
@@ -223,13 +221,13 @@ class MLMLoader(BaseBatchGen):
                     'src_tokens': s2s_source_ids.astype(np.int64),
                     'tgt_tokens': s2s_prev_input_ids.astype(np.int64),
                     'src_lengths': torch.LongTensor([len(x[2]) for x in batch]),
-                    'tgt_lengths':torch.LongTensor([len(x[3]) for x in batch]),
+                    'tgt_lengths': torch.LongTensor([len(x[3]) for x in batch]),
                     'non_last_token_tgt': torch.LongTensor(non_last_token_s2s_target_ids),
                     'targets': s2s_target_ids.astype(np.int64),
                     'nsentences': batch_size,
                     'ntokens': sum([len(x[0]) for x in batch]),
                 },
-                #Compatible for T5
+                # Compatible for T5
                 'net_input': {
                     'src_tokens': s2s_source_ids.astype(np.int64),
                     'prev_output_tokens': s2s_prev_input_ids.astype(np.int64),
@@ -247,22 +245,22 @@ class MLMLoader(BaseBatchGen):
         )
 
         return padded_batches
-    
+
     def _prepare(self, _random, doc):
         if self.args._name == "pretraining":
             nonmasked_tokens, masked_tokens = self._mask_lm(_random, doc)
             nonnoise_spans, noise_spans = self._span_corruption(_random, doc)
         elif self.args._name == "denoising_pretraining":
             nonnoise_spans, noise_spans = self._donoising_autoencoder(doc)
-            #noise_spans, noise_spans = noise_spans.tolist()[:self.args.tokens_per_sample - 2], noise_spans.tolist()[:self.args.tokens_per_sample - 2]
+            # noise_spans, noise_spans = noise_spans.tolist()[:self.args.tokens_per_sample - 2], noise_spans.tolist()[:self.args.tokens_per_sample - 2]
             noise_spans, noise_spans = noise_spans.tolist(), noise_spans.tolist()
             nonmasked_tokens, masked_tokens = nonnoise_spans, noise_spans
         return nonmasked_tokens, masked_tokens, nonnoise_spans, noise_spans
-    
+
     def _mask_lm(self, _random, doc):
         def mask_tokens():
             return f"<mask>"
-        
+
         length = len(doc)
         mask_tokens_num = int(length * self.args.mask_prob)
         mask_tokens_num = min(max(mask_tokens_num, 1), length - 1)
@@ -275,12 +273,10 @@ class MLMLoader(BaseBatchGen):
         for position in possible_mask_positions:
             masked_tokens.append(nonmasked_tokens[position])
             nonmasked_tokens[position] = self.dictionary.indices[mask_tokens()]
-        
+
         return nonmasked_tokens, masked_tokens
 
-
-
-    #Add Noise
+    # Add Noise
     def permute_sentences(self, source, p=1.0):
         if len(source) <= 3:
             return source
@@ -301,8 +297,8 @@ class MLMLoader(BaseBatchGen):
         # Ignore <bos> at start
         index = 1
         for i in ordering:
-            sentence = source[(sentence_ends[i - 1] if i > 0 else 1) : sentence_ends[i]]
-            result[index : index + sentence.size(0)] = sentence
+            sentence = source[(sentence_ends[i - 1] if i > 0 else 1): sentence_ends[i]]
+            result[index: index + sentence.size(0)] = sentence
             index += sentence.size(0)
         return result
 
@@ -458,7 +454,6 @@ class MLMLoader(BaseBatchGen):
         assert (result >= 0).all()
         return result
 
-
     def _donoising_autoencoder(self, tokens):
         if isinstance(tokens, list):
             tokens = torch.LongTensor(tokens)
@@ -476,18 +471,17 @@ class MLMLoader(BaseBatchGen):
         if self.args.rotate_ratio > 0.0 and np.random.random() < self.args.rotate_ratio:
             noise_spans = self.add_rolling_noise(noise_spans)
 
-
         # assert (noise_spans >= 0).all()
         # assert (noise_spans[1:-1] >= 1).all()
         # assert (noise_spans <= len(self.dictionary)).all()
         # assert noise_spans[0] == self.dictionary.bos()
         # assert noise_spans[-1] == self.dictionary.eos()
         return nonnoise_spans, noise_spans
+
     #########End#############
 
-
     def _span_corruption(self, _random, doc):
-        
+
         def mask_tokens(i):
             return f"<mask_{i}>"
 
@@ -503,9 +497,9 @@ class MLMLoader(BaseBatchGen):
         else:
             possible_split_positions = list(range(1, noise_tokens_num))
             _random.shuffle(possible_split_positions)
-            noise_split_positions = sorted(possible_split_positions[:noise_spans_num-1])
+            noise_split_positions = sorted(possible_split_positions[:noise_spans_num - 1])
             noise_split_positions = [0] + noise_split_positions + [noise_tokens_num]
-        
+
         possible_insert_positions = list(range(nonnoise_tokens_num))
         _random.shuffle(possible_insert_positions)
         noise_insert_positions = sorted(possible_insert_positions[:noise_spans_num])
@@ -514,21 +508,21 @@ class MLMLoader(BaseBatchGen):
         last_end = 0
         for i in range(noise_spans_num):
             start_pos = noise_insert_positions[i] + noise_split_positions[i]
-            end_pos = noise_insert_positions[i] + noise_split_positions[i+1]
+            end_pos = noise_insert_positions[i] + noise_split_positions[i + 1]
             mask_id = self.dictionary.indices[mask_tokens(i)]
 
             if getattr(self.args, "remove_target_sentinel", False):
                 noise_spans.append(doc[start_pos:end_pos])
             else:
                 noise_spans.append([mask_id] + doc[start_pos:end_pos])
-                
+
             if getattr(self.args, "remove_source_sentinel", False):
                 nonnoise_spans.extend(doc[last_end:start_pos])
             else:
                 nonnoise_spans.extend(doc[last_end:start_pos] + [mask_id])
-                
+
             last_end = end_pos
-            
+
         nonnoise_spans.extend(doc[last_end:])
         noise_spans = sum(noise_spans, [])
 
@@ -582,15 +576,13 @@ class MLMLoader(BaseBatchGen):
 
         return nonnoise_spans, noise_spans
 
-
-
     def _read_from_files(self, source_file, source_lang):
         # data = []
         file_path = os.path.join(self.data_dir, source_file)
-        
+
         if not os.path.exists(file_path):
             print('| file {} not exists'.format(file_path), flush=True)
-            return iter([]) # skip bad file
+            return iter([])  # skip bad file
 
         with open(file_path, 'r', encoding='utf8') as f:
             lines = f.read().strip().split('\n')
@@ -603,7 +595,7 @@ class MLMLoader(BaseBatchGen):
                     yield doc
                     doc = [self.dictionary.bos()]
                 continue
-            
+
             tokenized_line = self.tokenizer.EncodeAsPieces(line)
             tokenized_id = [self.dictionary.index(token) for token in tokenized_line] + [self.dictionary.eos_index]
 

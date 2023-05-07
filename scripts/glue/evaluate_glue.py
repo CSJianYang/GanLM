@@ -2,12 +2,16 @@ from fairseq import checkpoint_utils
 import sys
 import os
 import torch
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))))
 from unilm.models.electra_encoder_decoder_v6 import ElectraEncoderDecoderv6
 import tqdm
 import argparse
 from fairseq.data import data_utils, FairseqDataset, Dictionary
+
 TASKS = ["CoLA", "SST-2", "MRPC", "QQP", "STS-B", "MNLI", "QNLI", "RTE", "WNLI", "AX"]
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--ckpt-path', '-ckpt-path', type=str,
@@ -54,8 +58,8 @@ def calculate_accuacy(model):
     if os.path.exists(f"{args.test_set}.input1"):
         sents2 = [l.strip() for l in open(f"{args.test_set}.input1", "r", encoding="utf-8")]
     else:
-        #sent2 = None
-        sents2 = [l.strip() for l in open(f"{args.test_set}.input0", "r", encoding="utf-8")] # sent1 == sent2
+        # sent2 = None
+        sents2 = [l.strip() for l in open(f"{args.test_set}.input0", "r", encoding="utf-8")]  # sent1 == sent2
         print("Duplicate sent1 and sent2...")
     with open(f"{args.test_set}.input0") as input0_f:
         for index, sent1 in enumerate(input0_f):
@@ -71,16 +75,18 @@ def calculate_accuacy(model):
                 tokens = tokens.to(device)
                 prev_tokens = prev_tokens.to(device)
             if label_map is not None:
-                prediction = model.predict('sentence_classification_head', tokens=tokens, prev_tokens=prev_tokens).argmax().item()
+                prediction = model.predict('sentence_classification_head', tokens=tokens,
+                                           prev_tokens=prev_tokens).argmax().item()
                 prediction_label = label_map[prediction]
             else:
-                prediction_label = model.predict('sentence_classification_head', tokens=tokens, prev_tokens=prev_tokens, return_logits=True)
+                prediction_label = model.predict('sentence_classification_head', tokens=tokens, prev_tokens=prev_tokens,
+                                                 return_logits=True)
             prediction_labels.append(prediction_label)
             if labels is not None:
                 ncorrect += int(prediction_label == labels[index])
                 nsamples += 1
     if labels is not None:
-        print(f'{args.task} | Accuracy: {float(ncorrect)/float(nsamples)}')
+        print(f'{args.task} | Accuracy: {float(ncorrect) / float(nsamples)}')
     else:
         print("No Ground-truth!")
     if not os.path.exists(os.path.dirname(args.output)):
@@ -92,13 +98,13 @@ def calculate_accuacy(model):
 
 
 if __name__ == "__main__":
-    args=parse_args()
+    args = parse_args()
     assert args.task in TASKS
     vocab = Dictionary.load(args.vocab_path)
     vocab.add_symbol("<mask>")
     for i in range(100):
         vocab.add_symbol(f"<mask_{i}>")
-    #vocab.pad_to_multiple_(padding_factor=8)
+    # vocab.pad_to_multiple_(padding_factor=8)
     state = checkpoint_utils.load_checkpoint_to_cpu(args.ckpt_path)
     model = ElectraEncoderDecoderv6.build_model(state["cfg"].model, src_dict=vocab, tgt_dict=vocab)
     num_classes = 3 if args.task != "STS-B" else 1

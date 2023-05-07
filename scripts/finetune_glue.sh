@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 set -ex
 
 # args: checkpoint_folder step

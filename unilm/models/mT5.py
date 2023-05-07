@@ -16,11 +16,13 @@ from fairseq.models.transformer import (
 from torch import Tensor
 import logging
 import torch.nn as nn
+
 logger = logging.getLogger(__name__)
 try:
     from transformers.tokenization_utils_base import BatchEncoding
 except:
     pass
+
 
 class mT5Encoder(TransformerEncoderBase):
     def __init__(self, cfg, src_dict, encoder):
@@ -30,53 +32,48 @@ class mT5Encoder(TransformerEncoderBase):
         self.max_source_positions = cfg.max_source_positions
         self.padding_idx = src_dict.pad()
 
-
-
     def forward_scriptable(
-        self,
-        src_tokens,
-        src_lengths: Optional[torch.Tensor] = None,
-        return_all_hiddens: bool = False,
-        token_embeddings: Optional[torch.Tensor] = None,
+            self,
+            src_tokens,
+            src_lengths: Optional[torch.Tensor] = None,
+            return_all_hiddens: bool = False,
+            token_embeddings: Optional[torch.Tensor] = None,
     ):
         # compute padding mask
         attention_mask = (~ src_tokens.eq(self.padding_idx))
         # self.encoder.eval()
-        encoder_out = self.encoder(input_ids = src_tokens, attention_mask = attention_mask)
+        encoder_out = self.encoder(input_ids=src_tokens, attention_mask=attention_mask)
         return {
-            "encoder_out": [ encoder_out.last_hidden_state.transpose(0, 1) ],  # B x T x C -> T x B x C
-            "encoder_padding_mask": [ attention_mask ],  # B x T
+            "encoder_out": [encoder_out.last_hidden_state.transpose(0, 1)],  # B x T x C -> T x B x C
+            "encoder_padding_mask": [attention_mask],  # B x T
             "encoder_embedding": [],  # B x T x C
             "encoder_states": None,  # List[T x B x C]
             "src_tokens": [],
             "src_lengths": [src_lengths],
         }
 
-
     def forward(
-        self,
-        src_tokens,
-        src_lengths: Optional[torch.Tensor] = None,
-        return_all_hiddens: bool = False,
-        token_embeddings: Optional[torch.Tensor] = None,
+            self,
+            src_tokens,
+            src_lengths: Optional[torch.Tensor] = None,
+            return_all_hiddens: bool = False,
+            token_embeddings: Optional[torch.Tensor] = None,
     ):
         return self.forward_scriptable(
             src_tokens, src_lengths, return_all_hiddens, token_embeddings
         )
-
 
     def max_positions(self):
         """Maximum input length supported by the encoder."""
         return self.max_source_positions
 
 
-
 class mT5Decoder(TransformerDecoderBase):
     def __init__(
-        self,
-        cfg,
-        tgt_dict,
-        decoder
+            self,
+            cfg,
+            tgt_dict,
+            decoder
     ):
         nn.Module.__init__(self)
         self.cfg = cfg
@@ -88,18 +85,17 @@ class mT5Decoder(TransformerDecoderBase):
         self.onnx_trace = False
         self.embed_dim = cfg.decoder_embed_dim
 
-
     def forward(
-        self,
-        prev_output_tokens,
-        encoder_out: Optional[Dict[str, List[Tensor]]] = None,
-        incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
-        features_only: bool = False,
-        full_context_alignment: bool = False,
-        alignment_layer: Optional[int] = None,
-        alignment_heads: Optional[int] = None,
-        src_lengths: Optional[Any] = None,
-        return_all_hiddens: bool = False,
+            self,
+            prev_output_tokens,
+            encoder_out: Optional[Dict[str, List[Tensor]]] = None,
+            incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
+            features_only: bool = False,
+            full_context_alignment: bool = False,
+            alignment_layer: Optional[int] = None,
+            alignment_heads: Optional[int] = None,
+            src_lengths: Optional[Any] = None,
+            return_all_hiddens: bool = False,
     ):
         x, extra = self.extract_features(
             prev_output_tokens,
@@ -116,15 +112,14 @@ class mT5Decoder(TransformerDecoderBase):
             x = self.output_layer(x)
         return x, extra
 
-
     def extract_features(
-        self,
-        prev_output_tokens,
-        encoder_out: Optional[Dict[str, List[Tensor]]],
-        incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
-        full_context_alignment: bool = False,
-        alignment_layer: Optional[int] = None,
-        alignment_heads: Optional[int] = None,
+            self,
+            prev_output_tokens,
+            encoder_out: Optional[Dict[str, List[Tensor]]],
+            incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
+            full_context_alignment: bool = False,
+            alignment_layer: Optional[int] = None,
+            alignment_heads: Optional[int] = None,
     ):
         return self.extract_features_scriptable(
             prev_output_tokens,
@@ -142,29 +137,29 @@ class mT5Decoder(TransformerDecoderBase):
     """
 
     def extract_features_scriptable(
-        self,
-        prev_output_tokens,
-        encoder_out: Optional[Dict[str, List[Tensor]]],
-        incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
-        full_context_alignment: bool = False,
-        alignment_layer: Optional[int] = None,
-        alignment_heads: Optional[int] = None,
+            self,
+            prev_output_tokens,
+            encoder_out: Optional[Dict[str, List[Tensor]]],
+            incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
+            full_context_alignment: bool = False,
+            alignment_layer: Optional[int] = None,
+            alignment_heads: Optional[int] = None,
     ):
-        #inputs_embeds = self.decoder.embed_tokens(prev_output_tokens)
-        #self_attn_mask = self.buffered_future_mask(inputs_embeds)
+        # inputs_embeds = self.decoder.embed_tokens(prev_output_tokens)
+        # self_attn_mask = self.buffered_future_mask(inputs_embeds)
         # self.decoder.eval()
         self_attn_mask = (~ prev_output_tokens.eq(self.padding_idx))
         decoder_out = self.decoder(
-            input_ids = prev_output_tokens,
-            attention_mask = self_attn_mask,
-            encoder_hidden_states = encoder_out["encoder_out"][0].transpose(0, 1), # T x B x H -> B x T x H
-            encoder_attention_mask = encoder_out["encoder_padding_mask"][0], # T x B x H -> B x T x H
-            past_key_values = incremental_state,
-            output_hidden_states = True
+            input_ids=prev_output_tokens,
+            attention_mask=self_attn_mask,
+            encoder_hidden_states=encoder_out["encoder_out"][0].transpose(0, 1),  # T x B x H -> B x T x H
+            encoder_attention_mask=encoder_out["encoder_padding_mask"][0],  # T x B x H -> B x T x H
+            past_key_values=incremental_state,
+            output_hidden_states=True
         )
         x = decoder_out.last_hidden_state
         attn = decoder_out.attentions
-        inner_states  = decoder_out.hidden_states
+        inner_states = decoder_out.hidden_states
         return x, {"attn": [attn], "inner_states": inner_states}
 
     def build_output_projection(self, cfg, dictionary, embed_tokens):
@@ -173,7 +168,7 @@ class mT5Decoder(TransformerDecoderBase):
             embed_tokens.weight.shape[0],
             bias=False,
         )
-        #self.output_projection.weight = embed_tokens.weight
+        # self.output_projection.weight = embed_tokens.weight
 
     def output_layer(self, features):
         return self.output_projection(features)
@@ -190,7 +185,6 @@ class mT5(TransformerModelBase):
         self.cfg = cfg
         self.supports_align_args = True
 
-
     @classmethod
     def add_args(cls, parser):
         """Add model-specific arguments to the parser."""
@@ -199,22 +193,21 @@ class mT5(TransformerModelBase):
             parser, TransformerConfig(), delete_default=False, with_prefix=""
         )
 
-
     @classmethod
     def build_model(cls, cfg, task):
         """Build a new model instance."""
         from transformers import MT5Model, MT5Config
         src_dict, tgt_dict = task.source_dictionary, task.target_dictionary
-        #mT5_config = MT5Config(f"{os.path.dirname(task.args.finetune_from_model)}/config.json")
-        mT5_config = MT5Model.config_class.from_pretrained(f"{os.path.dirname(task.args.finetune_from_model)}/config.json")
+        # mT5_config = MT5Config(f"{os.path.dirname(task.args.finetune_from_model)}/config.json")
+        mT5_config = MT5Model.config_class.from_pretrained(
+            f"{os.path.dirname(task.args.finetune_from_model)}/config.json")
         mT5_config.vocab_size = len(src_dict)
-        #embed_tokens = cls.build_embedding(cfg, src_dict, mT5_config.d_model)
-        #mT5 = MT5Model(mT5_config, embed_tokens=embed_tokens)
+        # embed_tokens = cls.build_embedding(cfg, src_dict, mT5_config.d_model)
+        # mT5 = MT5Model(mT5_config, embed_tokens=embed_tokens)
         mT5 = MT5Model(mT5_config)
         encoder = cls.build_encoder(cfg, src_dict, mT5.encoder)
         decoder = cls.build_decoder(cfg, tgt_dict, mT5.decoder)
         return cls(cfg, encoder, decoder)
-
 
     @classmethod
     def build_encoder(cls, cfg, src_dict, encoder):
@@ -227,14 +220,14 @@ class mT5(TransformerModelBase):
     # TorchScript doesn't support optional arguments with variable length (**kwargs).
     # Current workaround is to add union of all arguments in child classes.
     def forward(
-        self,
-        src_tokens,
-        src_lengths,
-        prev_output_tokens,
-        return_all_hiddens: bool = True,
-        features_only: bool = False,
-        alignment_layer: Optional[int] = None,
-        alignment_heads: Optional[int] = None,
+            self,
+            src_tokens,
+            src_lengths,
+            prev_output_tokens,
+            return_all_hiddens: bool = True,
+            features_only: bool = False,
+            alignment_layer: Optional[int] = None,
+            alignment_heads: Optional[int] = None,
     ):
         """
         Run the forward pass for an encoder-decoder model.
@@ -265,14 +258,13 @@ class mT5(TransformerModelBase):
     # helper function in the Base Class.
     @torch.jit.export
     def get_normalized_probs(
-        self,
-        net_output: Tuple[Tensor, Optional[Dict[str, List[Optional[Tensor]]]]],
-        log_probs: bool,
-        sample: Optional[Dict[str, Tensor]] = None,
+            self,
+            net_output: Tuple[Tensor, Optional[Dict[str, List[Optional[Tensor]]]]],
+            log_probs: bool,
+            sample: Optional[Dict[str, Tensor]] = None,
     ):
         """Get normalized probabilities (or log probs) from a net's output."""
         return self.get_normalized_probs_scriptable(net_output, log_probs, sample)
-
 
     def upgrade_state_dict_named(self, state_dict, name):
         """Upgrade a (possibly old) state dict for new versions of fairseq."""
@@ -283,13 +275,13 @@ class mT5(TransformerModelBase):
             elif "decoder" in key:
                 new_state_dict[key.replace("decoder", "decoder.decoder")] = state_dict[key]
         new_state_dict["decoder.output_projection.weight"] = self.state_dict()["decoder.output_projection.weight"]
-        #new_state_dict["decoder.output_projection.weight"] = state_dict["decoder.embed_tokens.weight"]
+        # new_state_dict["decoder.output_projection.weight"] = state_dict["decoder.embed_tokens.weight"]
         state_dict.clear()
         for k, v in new_state_dict.items():
             state_dict[k] = v
-        #word embeddings
+        # word embeddings
         keys = [k for k in state_dict.keys() if "embed_tokens" in k]
-        #keys = [k for k in state_dict.keys() if "embed_tokens" in k or "decoder.output_projection" in k]
+        # keys = [k for k in state_dict.keys() if "embed_tokens" in k or "decoder.output_projection" in k]
         cur_words_num, embed_size = self.state_dict()[keys[0]].size()
         prev_words_num = state_dict[keys[0]].size(0)
         if cur_words_num > prev_words_num:

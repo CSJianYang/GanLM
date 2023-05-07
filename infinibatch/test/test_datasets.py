@@ -24,7 +24,7 @@ class TestBase(unittest.TestCase):
                 "item number ten",
                 "item number eleven",
             ],
-            ["item number twelve", "item number thirteen", "item number fourteen",],
+            ["item number twelve", "item number thirteen", "item number fourteen", ],
         ]
 
         self.flattened_test_data = []

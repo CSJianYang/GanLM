@@ -25,16 +25,15 @@ from omegaconf import DictConfig
 
 
 def main(cfg: DictConfig):
-
     if isinstance(cfg, Namespace):
         cfg = convert_namespace_to_omegaconf(cfg)
 
     assert cfg.common_eval.path is not None, "--path required for generation!"
     assert (
-        not cfg.generation.sampling or cfg.generation.nbest == cfg.generation.beam
+            not cfg.generation.sampling or cfg.generation.nbest == cfg.generation.beam
     ), "--sampling requires --nbest to be equal to --beam"
     assert (
-        cfg.generation.replace_unk is None or cfg.dataset.dataset_impl == "raw"
+            cfg.generation.replace_unk is None or cfg.dataset.dataset_impl == "raw"
     ), "--replace-unk requires a raw text dataset (--dataset-impl=raw)"
 
     if cfg.common_eval.results_path is not None:
@@ -80,7 +79,6 @@ def _main(cfg: DictConfig, output_file):
 
     # Load dataset splits
     task = tasks.setup_task(cfg.task)
-
 
     # Set dictionaries
     try:

@@ -5,17 +5,23 @@ import numpy as np
 import torch
 from fairseq.data import data_utils, FairseqDataset, Dictionary
 import sys
+
 sys.path.append("/home/v-jiaya/unilm-moe/unilm-moe/")
 from unilm.models.electra_encoder_decoder_v6 import ElectraEncoderDecoderv6
-LANGS="en,fr,cs,de,fi,lv,et,ro,hi,tr,gu".split(",")
+
+LANGS = "en,fr,cs,de,fi,lv,et,ro,hi,tr,gu".split(",")
+
+
 def mapping(languages: str) -> dict:
     return dict(
         tuple(pair.split(":"))
         for pair in languages.strip().replace("\n", "").split(",")
     )
 
+
 def _lang_token(lang: str):
     return '__{}__'.format(lang)
+
 
 def _lang_token_index(dic: Dictionary, lang: str):
     """Return language token index."""
@@ -139,7 +145,7 @@ class LanguagePairLangidDataset(FairseqDataset):
             if src_item[-1] == eos:
                 src_item = src_item[:-1]
 
-        #append langid to source end
+        # append langid to source end
         if self.encoder_langtok is not None:
             new_eos = self.get_encoder_langtok(src_lang, tgt_lang)
             src_item = torch.cat([torch.LongTensor([new_eos]), src_item])
@@ -204,11 +210,11 @@ class LanguagePairLangidDataset(FairseqDataset):
 
 def get_dataset(args, vocab):
     with open(args.src_fn) as fp: src_lines = [l for l in fp]
-    #with open(args.tgt_fn) as fp: tgt_lines = [l for l in fp]
+    # with open(args.tgt_fn) as fp: tgt_lines = [l for l in fp]
     src = [torch.tensor([vocab.index(w) for w in src_line.split()] + [vocab.eos()]) for src_line in src_lines]
     src_sizes = np.array([len(s)] for s in src_lines)
     src_lang = [args.src_fn.split('.')[-1]] * len(src)
-    #src_lang = ["en"] * len(src)
+    # src_lang = ["en"] * len(src)
     dataset = LanguagePairLangidDataset(src, src_sizes, vocab, src_lang, src, src_sizes, vocab, src_lang)
     return dataset
 
@@ -219,48 +225,55 @@ def run(args):
     vocab.add_symbol("<mask>")
     for i in range(100):
         vocab.add_symbol(f"<mask_{i}>")
-    #vocab.pad_to_multiple_(padding_factor=8)
+    # vocab.pad_to_multiple_(padding_factor=8)
     for lang in LANGS:
         vocab.add_symbol(f"__{lang}__")
     state = checkpoint_utils.load_checkpoint_to_cpu(args.ckpt_path)
-    model = ElectraEncoderDecoderv6.build_model(state["cfg"].model, src_dict = vocab, tgt_dict = vocab)
+    model = ElectraEncoderDecoderv6.build_model(state["cfg"].model, src_dict=vocab, tgt_dict=vocab)
     model.load_state_dict(state["model"], strict=True)
     dataset = get_dataset(args, vocab)
     dl = DataLoader(dataset, batch_size=args.bsz, shuffle=False, collate_fn=dataset.collater)
-    #model.cuda()
+    # model.cuda()
     model.eval()
     model_name = args.model_name
+
     def write_reprs(output_file, reprs):
         with open(output_file, "w") as w:
             for repr in reprs:
                 repr = [str(w) for w in repr]
                 w.write("{}\n".format(" ".join(repr)))
         print(f"Successfully saving to {output_file}")
+
     all_encoder_reprs = []
     all_decoder_reprs = []
     with torch.no_grad():
         for batch_id, sample in enumerate(dl):
             print(f"Processing {batch_id} batches")
-            decoder_out = model(sample['net_input']['src_tokens'], sample['net_input']['src_lengths'], prev_output_tokens = sample['net_input']['prev_output_tokens'], return_all_hiddens=True)
+            decoder_out = model(sample['net_input']['src_tokens'], sample['net_input']['src_lengths'],
+                                prev_output_tokens=sample['net_input']['prev_output_tokens'], return_all_hiddens=True)
             all_encoder_reprs.append(decoder_out[1]["encoder_states"])
             all_decoder_reprs.append(decoder_out[1]["inner_states"])
         for layer_id in range(len(all_encoder_reprs[0])):
-            layer_encoder_reprs = [[round(w, 3) for w in ws] for encoder_reprs in all_encoder_reprs for ws in encoder_reprs[layer_id][0, :, :].tolist()]
-            layer_decoder_reprs = [[round(w, 3) for w in ws] for decoder_reprs in all_decoder_reprs for ws in decoder_reprs[layer_id][0, :, :].tolist()]
+            layer_encoder_reprs = [[round(w, 3) for w in ws] for encoder_reprs in all_encoder_reprs for ws in
+                                   encoder_reprs[layer_id][0, :, :].tolist()]
+            layer_decoder_reprs = [[round(w, 3) for w in ws] for decoder_reprs in all_decoder_reprs for ws in
+                                   decoder_reprs[layer_id][0, :, :].tolist()]
             write_reprs(f"{args.src_fn}.{model_name}.encoder{layer_id}.{args.suffix}", layer_encoder_reprs)
             write_reprs(f"{args.src_fn}.{model_name}.decoder{layer_id}.{args.suffix}", layer_decoder_reprs)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--ckpt_path', default="/home/v-jiaya/unilm-moe/data/wmt10/model/transformer/avg2_6.pt", type=str)
+    parser.add_argument('--ckpt_path', default="/home/v-jiaya/unilm-moe/data/wmt10/model/transformer/avg2_6.pt",
+                        type=str)
     parser.add_argument('--model_name', default="our", type=str)
     parser.add_argument("--src_fn", type=str,
                         default="/home/v-jiaya/unilm-moe/data/representations/similarity/parallel.en")
     parser.add_argument("--tgt_fn", type=str,
                         default="/home/v-jiaya/unilm-moe/data/representations/similarity/parallel.en")
-    parser.add_argument('--vocab_path', default="/home/v-jiaya/unilm-moe/data/PretrainedModels/multilingual/dict.txt", type=str)
-    #parser.add_argument('--wa_layer', default=-1, type=int)
+    parser.add_argument('--vocab_path', default="/home/v-jiaya/unilm-moe/data/PretrainedModels/multilingual/dict.txt",
+                        type=str)
+    # parser.add_argument('--wa_layer', default=-1, type=int)
     parser.add_argument('--suffix', default="repr", type=str)
     parser.add_argument('--bsz', default=64, type=int)
     args = parser.parse_args()

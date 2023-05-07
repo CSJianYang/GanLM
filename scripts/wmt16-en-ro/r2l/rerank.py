@@ -6,6 +6,7 @@
 import sys
 from collections import defaultdict
 
+
 if __name__ == '__main__':
 
     if len(sys.argv) > 1:
@@ -22,7 +23,7 @@ if __name__ == '__main__':
 
         # new input sentence: print best translation of previous sentence, and reset stats
         if int(num) > cur:
-            print best_sent
+            print(best_sent)
             #print best_score
             cur = int(num)
             best_score = float('inf')
@@ -41,5 +42,4 @@ if __name__ == '__main__':
         idx += 1
 
     # end of file; print best translation of last sentence
-    print best_sent
-#    print best_score
+    print(best_sent)

@@ -13,9 +13,11 @@ from fairseq import metrics, search, tokenizer, utils
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class Seq2Seq_GenerationConfig(TranslationConfig):
     required_batch_size_multiple: int = II("dataset.required_batch_size_multiple")
+
 
 @register_task("seq2seq_generation", dataclass=Seq2Seq_GenerationConfig)
 class GenerationTask(TranslationTask):
@@ -29,8 +31,6 @@ class GenerationTask(TranslationTask):
         self.mask_idx = src_dict.index("<mask>")
         super().__init__(args, src_dict, tgt_dict)
 
-
-
     @classmethod
     def load_dictionary(cls, filename, extra_mask_tokens=False, required_batch_size_multiple=1):
         """Load the dictionary from the filename
@@ -38,7 +38,7 @@ class GenerationTask(TranslationTask):
             filename (str): the filename
         """
         dictionary = Dictionary.load(filename)
-        
+
         if extra_mask_tokens:
             dictionary.add_symbol("<mask>")
             for i in range(100):
@@ -47,7 +47,7 @@ class GenerationTask(TranslationTask):
         dictionary.pad_to_multiple_(required_batch_size_multiple)
 
         return dictionary
-    
+
     @property
     def dictionary(self):
         """Return the source :class:`~fairseq.data.Dictionary`."""

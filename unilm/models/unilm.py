@@ -32,6 +32,7 @@ DEFAULT_MAX_TARGET_POSITIONS = 1024
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class UniLMModelConfig(FairseqDataclass):
     activation_fn: ChoiceEnum(utils.get_available_activation_fns()) = field(
@@ -148,7 +149,7 @@ class UniLMModelConfig(FairseqDataclass):
     ffn_layernorm: bool = field(
         default=False, metadata={"help": ""}
     )
-    
+
 
 @register_model("unilm", dataclass=UniLMModelConfig)
 class UniLMModel(BaseFairseqModel):
@@ -188,14 +189,14 @@ class UniLMModel(BaseFairseqModel):
     def build_embedding(cls, args, dictionary, embed_dim, path=None):
         embed_tokens = Embedding(len(dictionary), embed_dim, dictionary.pad())
         return embed_tokens
-    
+
     @classmethod
     def build_lm_head(cls, args, embed_dim, output_dim, activation_fn, weight):
         return LMHead(embed_dim, output_dim, activation_fn, weight)
-    
+
     def output_layer(self, features):
         return self.lm_head(features)
-    
+
     def register_classification_head(self, name, num_classes=None, inner_dim=None, **kwargs):
         """Register a classification head."""
         if name in self.classification_heads:
@@ -215,12 +216,12 @@ class UniLMModel(BaseFairseqModel):
             self.args.pooler_activation_fn,
             self.args.pooler_dropout,
         )
-    
+
     def register_question_answering_head(self, name, num_classes=None):
         self.classification_heads[name] = SQuADHead(
             self.args.encoder_embed_dim,
         )
-    
+
     def upgrade_state_dict_named(self, state_dict, name):
         prefix = name + '.' if name != '' else ''
 
@@ -252,8 +253,8 @@ class UniLMModel(BaseFairseqModel):
                     )
                     keys_to_delete.append(k)
                 elif (
-                    num_classes != self.classification_heads[head_name].out_proj.out_features
-                    or inner_dim != self.classification_heads[head_name].dense.out_features
+                        num_classes != self.classification_heads[head_name].out_proj.out_features
+                        or inner_dim != self.classification_heads[head_name].dense.out_features
                 ):
                     logger.warning(
                         'deleting classification head ({}) from checkpoint '
@@ -271,8 +272,9 @@ class UniLMModel(BaseFairseqModel):
                 if prefix + 'classification_heads.' + k not in state_dict:
                     logger.info('Overwriting ' + prefix + 'classification_heads.' + k)
                     state_dict[prefix + 'classification_heads.' + k] = v
-    
-    def forward(self, src_tokens=None, tgt_tokens=None, incremental_state=None, classification_head_name=None, **kwargs):
+
+    def forward(self, src_tokens=None, tgt_tokens=None, incremental_state=None, classification_head_name=None,
+                **kwargs):
         x, extra = self.body(src_tokens, tgt_tokens, incremental_state, return_all_hiddens=True)
 
         if classification_head_name is not None:
@@ -280,14 +282,15 @@ class UniLMModel(BaseFairseqModel):
 
         return x, extra
 
+
 class UniLMBody(FairseqIncrementalDecoder):
 
     def __init__(
-        self,
-        cfg,
-        dictionary,
-        embed_tokens,
-        output_projection=None,
+            self,
+            cfg,
+            dictionary,
+            embed_tokens,
+            output_projection=None,
     ):
         self.cfg = cfg
         super().__init__(dictionary)
@@ -347,20 +350,19 @@ class UniLMBody(FairseqIncrementalDecoder):
             self.layer_norm = LayerNorm(embed_dim)
         else:
             self.layer_norm = None
-        
+
         if cfg.rel_pos_buckets > 0 and cfg.max_rel_pos > 0:
             self.relative_position = RelativePositionBias(
-                num_buckets=cfg.rel_pos_buckets, 
-                max_distance=cfg.max_rel_pos, 
+                num_buckets=cfg.rel_pos_buckets,
+                max_distance=cfg.max_rel_pos,
                 n_heads=cfg.encoder_attention_heads,
             )
         else:
             self.relative_position = None
-        
+
         self.apply(init_bert_params)
         if safe_getattr(cfg, 'rescale_init', False):
             self.rescale_fixup()
-        
 
     def forward_torchscript(self, net_input: Dict[str, Tensor]):
         """A TorchScript-compatible version of forward.
@@ -383,7 +385,6 @@ class UniLMBody(FairseqIncrementalDecoder):
         }
         return self.forward(**encoder_input)
 
-
     def build_encoder_layer(self, cfg):
         if safe_getattr(cfg, "task_moe", False):
             layer = UniLMTaskMoeLayer(cfg)
@@ -398,7 +399,7 @@ class UniLMBody(FairseqIncrementalDecoder):
         min_params_to_wrap = cfg.min_params_to_wrap if not checkpoint else 0
         layer = fsdp_wrap(layer, min_num_params=min_params_to_wrap)
         return layer
-    
+
     def build_self_attn_mask(self, x, bidirectional=True):
         dim = x.size(1)
         _mask = torch.zeros([dim, dim])
@@ -408,21 +409,21 @@ class UniLMBody(FairseqIncrementalDecoder):
             )
         _mask = _mask.to(x).float()
         return _mask
-    
+
     def build_seq2seq_attn_mask(self, x, y):
         x_dim, y_dim = x.size(1), y.size(1)
-        _mask = torch.zeros([x_dim+y_dim, x_dim+y_dim])
+        _mask = torch.zeros([x_dim + y_dim, x_dim + y_dim])
         _mask = torch.triu(
-                utils.fill_with_neg_inf(_mask), 1
+            utils.fill_with_neg_inf(_mask), 1
         )
         _mask[:, :x_dim] = 0
         _mask = _mask.to(x).float()
         return _mask
-    
+
     def rescale_fixup(self):
         def rescale(param, layer_id):
             param.div_(math.sqrt(2.0 * layer_id))
-        
+
         for layer_id in range(len(self.layers)):
             layer = self.layers[layer_id]
             rescale(layer.self_attn.out_proj.weight.data, layer_id + 1)
@@ -433,12 +434,12 @@ class UniLMBody(FairseqIncrementalDecoder):
                 rescale(layer.fc2.weight.data, layer_id + 1)
 
     def forward(
-        self,
-        src_tokens = None,
-        tgt_tokens = None,
-        incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
-        return_all_hiddens: bool = False,
-        **extra
+            self,
+            src_tokens=None,
+            tgt_tokens=None,
+            incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
+            return_all_hiddens: bool = False,
+            **extra
     ):
         # embed positions
         positions = None
@@ -472,7 +473,7 @@ class UniLMBody(FairseqIncrementalDecoder):
 
         if self.relative_position is not None:
             rel_pos_bias = self.relative_position(
-                batch_size=tokens.size(0), 
+                batch_size=tokens.size(0),
                 qlen=tokens.size(1),
                 klen=tokens.size(1)
             )
@@ -527,10 +528,8 @@ class UniLMBody(FairseqIncrementalDecoder):
 
         return x, {"encoder_padding_mask": self_attn_padding_mask, "attn": [attn], "inner_states": inner_states}
 
-
     def output_layer(self, features):
         return self.output_projection(features)
-
 
     def max_positions(self):
         if self.embed_positions is None:
@@ -596,7 +595,7 @@ class UniLMTaskMoeLayer(nn.Module):
         return nn.Linear(input_dim, output_dim)
 
     def build_self_attention(
-        self, embed_dim, cfg
+            self, embed_dim, cfg
     ):
         return MultiheadAttention(
             embed_dim,
@@ -609,14 +608,14 @@ class UniLMTaskMoeLayer(nn.Module):
         return residual + x
 
     def forward(
-        self,
-        x,
-        incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
-        self_attn_mask: Optional[torch.Tensor] = None,
-        self_attn_padding_mask: Optional[torch.Tensor] = None,
-        src_tokens = None,
-        tgt_tokens = None,
-        **kwargs,
+            self,
+            x,
+            incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
+            self_attn_mask: Optional[torch.Tensor] = None,
+            self_attn_padding_mask: Optional[torch.Tensor] = None,
+            src_tokens=None,
+            tgt_tokens=None,
+            **kwargs,
     ):
         residual = x
         if self.normalize_before:
@@ -631,7 +630,7 @@ class UniLMTaskMoeLayer(nn.Module):
             need_weights=False,
             attn_mask=self_attn_mask,
         )
-        
+
         x = self.dropout_module(x)
         x = self.residual_connection(x, residual)
         if not self.normalize_before:
@@ -643,7 +642,7 @@ class UniLMTaskMoeLayer(nn.Module):
 
         if src_tokens is not None and tgt_tokens is not None:
             x1, x2 = x[:src_tokens.size(1)], x[src_tokens.size(1):]
-            
+
             x1 = self.activation_fn(self.fc1[0](x1))
             x1 = self.activation_dropout_module(x1)
             if self.ffn_layer_norm is not None:
@@ -675,8 +674,9 @@ class UniLMTaskMoeLayer(nn.Module):
         x = self.residual_connection(x, residual)
         if not self.normalize_before:
             x = self.final_layer_norm(x)
-        
+
         return x, attn, None
+
 
 class UniLMLayer(nn.Module):
 
@@ -723,7 +723,7 @@ class UniLMLayer(nn.Module):
         return nn.Linear(input_dim, output_dim)
 
     def build_self_attention(
-        self, embed_dim, cfg
+            self, embed_dim, cfg
     ):
         return MultiheadAttention(
             embed_dim,
@@ -736,12 +736,12 @@ class UniLMLayer(nn.Module):
         return residual + x
 
     def forward(
-        self,
-        x,
-        incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
-        self_attn_mask: Optional[torch.Tensor] = None,
-        self_attn_padding_mask: Optional[torch.Tensor] = None,
-        **kwargs
+            self,
+            x,
+            incremental_state: Optional[Dict[str, Dict[str, Optional[Tensor]]]] = None,
+            self_attn_mask: Optional[torch.Tensor] = None,
+            self_attn_padding_mask: Optional[torch.Tensor] = None,
+            **kwargs
     ):
         residual = x
         if self.normalize_before:
@@ -775,19 +775,20 @@ class UniLMLayer(nn.Module):
         x = self.residual_connection(x, residual)
         if not self.normalize_before:
             x = self.final_layer_norm(x)
-        
+
         return x, attn, None
+
 
 class ClassificationHead(nn.Module):
     """Head for sentence-level classification tasks."""
 
     def __init__(
-        self,
-        input_dim,
-        inner_dim,
-        num_classes,
-        activation_fn,
-        pooler_dropout,
+            self,
+            input_dim,
+            inner_dim,
+            num_classes,
+            activation_fn,
+            pooler_dropout,
     ):
         super().__init__()
         self.dense = nn.Linear(input_dim, inner_dim)
@@ -803,6 +804,7 @@ class ClassificationHead(nn.Module):
         x = self.dropout(x)
         x = self.out_proj(x)
         return x
+
 
 class LMHead(nn.Module):
     """Head for masked language modeling."""
@@ -831,6 +833,7 @@ class LMHead(nn.Module):
         x = F.linear(x, self.weight) + self.bias
         return x
 
+
 class RelativePositionBias(nn.Module):
     def __init__(self, bidirectional=True, num_buckets=32, max_distance=128, n_heads=12):
         super(RelativePositionBias, self).__init__()
@@ -842,7 +845,7 @@ class RelativePositionBias(nn.Module):
 
     @staticmethod
     def _relative_position_bucket(relative_position, bidirectional=True, num_buckets=32, max_distance=128):
-        
+
         ret = 0
         n = -relative_position
         if bidirectional:
@@ -859,7 +862,7 @@ class RelativePositionBias(nn.Module):
 
         # The other half of the buckets are for logarithmically bigger bins in positions up to max_distance
         val_if_large = max_exact + (
-            torch.log(n.float() / max_exact) / math.log(max_distance / max_exact) * (num_buckets - max_exact)
+                torch.log(n.float() / max_exact) / math.log(max_distance / max_exact) * (num_buckets - max_exact)
         ).to(torch.long)
         val_if_large = torch.min(val_if_large, torch.full_like(val_if_large, num_buckets - 1))
 
@@ -892,7 +895,8 @@ class RelativePositionBias(nn.Module):
         return values
 
     def forward(self, batch_size, qlen, klen, step=None):
-        return self.compute_bias(qlen, klen, step).repeat(batch_size, 1, 1, 1).view(-1, qlen, klen)  # shape (batch * num_heads, qlen, klen)
+        return self.compute_bias(qlen, klen, step).repeat(batch_size, 1, 1, 1).view(-1, qlen,
+                                                                                    klen)  # shape (batch * num_heads, qlen, klen)
 
 
 @register_model_architecture("unilm", "unilm_base")
@@ -937,7 +941,7 @@ def base_unilm_architecture(args):
     args.checkpoint_activations = safe_getattr(args, "checkpoint_activations", False)
     args.offload_activations = safe_getattr(args, "offload_activations", False)
     args.min_params_to_wrap = safe_getattr(args, "min_params_to_wrap", DEFAULT_MIN_PARAMS_TO_WRAP)
-    #Relative Positions Bias
+    # Relative Positions Bias
     args.rel_pos_buckets = safe_getattr(args, "rel_pos_buckets", 0)
     args.max_rel_pos = safe_getattr(args, "min_params_to_wrap", 0)
     if args.offload_activations:

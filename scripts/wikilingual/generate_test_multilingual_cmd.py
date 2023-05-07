@@ -1,20 +1,30 @@
 import argparse
-LANGS="en es pt fr de ru it id nl ar vi zh th ja ko hi cs tr".split()
-mBART_LANGS="en_XX es_XX pt_XX fr_XX de_DE ru_RU it_IT id_ID nl_XX ar_AR vi_VN zh_CN th_TH ja_XX ko_KR hi_IN cs_CZ tr_TR".split()
+
+LANGS = "en es pt fr de ru it id nl ar vi zh th ja ko hi cs tr".split()
+mBART_LANGS = "en_XX es_XX pt_XX fr_XX de_DE ru_RU it_IT id_ID nl_XX ar_AR vi_VN zh_CN th_TH ja_XX ko_KR hi_IN cs_CZ " \
+              "tr_TR".split()
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--transformer-checkpoint', '-transformer-checkpoint', type=str,
-                        default="/mnt/input/mBART/WikiLingual/download-split/model/multilingual/128GPU-LR1e-4/transformer/avg4_8.pt", help='output stream')
+                        default="/mnt/input/mBART/WikiLingual/download-split/model/multilingual/128GPU-LR1e-4/transformer/avg4_8.pt",
+                        help='output stream')
     parser.add_argument('--mBART-checkpoint', '-mBART-checkpoint', type=str,
-                        default="/mnt/input/mBART/WikiLingual/download-split/model/multilingual/128GPU-LR1e-4/mBART/avg4_8.pt", help='output stream')
+                        default="/mnt/input/mBART/WikiLingual/download-split/model/multilingual/128GPU-LR1e-4/mBART/avg4_8.pt",
+                        help='output stream')
     parser.add_argument('--our-checkpoint', '-our-checkpoint', type=str,
-                        default="/mnt/input/mBART/WikiLingual/download-split/model/multilingual/our/Denoising/linear-8epoch/avg4_8.pt", help='output stream')
+                        default="/mnt/input/mBART/WikiLingual/download-split/model/multilingual/our/Denoising/linear-8epoch/avg4_8.pt",
+                        help='output stream')
     parser.add_argument('--transformer-output', '-transformer-output', type=str,
-                        default=r'/home/v-jiaya/mBART/mBART/submit_test_wikilingual_multilingual_transformer.yaml',  help='output stream')
+                        default=r'/home/v-jiaya/mBART/mBART/submit_test_wikilingual_multilingual_transformer.yaml',
+                        help='output stream')
     parser.add_argument('--mBART-output', '-mBART-output', type=str,
-                        default=r'/home/v-jiaya/mBART/mBART/submit_test_wikilingual_multilingual_mBART.yaml', help='output stream')
+                        default=r'/home/v-jiaya/mBART/mBART/submit_test_wikilingual_multilingual_mBART.yaml',
+                        help='output stream')
     parser.add_argument('--our-output', '-our-output', type=str,
-                        default=r'/home/v-jiaya/mBART/mBART/submit_test_wikilingual_multilingual_our.yaml', help='output stream')
+                        default=r'/home/v-jiaya/mBART/mBART/submit_test_wikilingual_multilingual_our.yaml',
+                        help='output stream')
     args = parser.parse_args()
     return args
 
@@ -72,19 +82,17 @@ jobs:"""
   sku: G1
   sku_count: 1
   command:
-    - bash ./shells/aml/multi-node/WikiLingual/test/test_aml.sh {} {} {} {} {} {} {} {}""".format(checkpoint.replace(".", "_"), LANGS[i], mBART_LANGS[i], LANGS[i], batch_size, beam, checkpoint, checkpoint_name, min_len, max_len)
+    - bash ./shells/aml/multi-node/WikiLingual/test/test_aml.sh {} {} {} {} {} {} {} {}""".format(
+            checkpoint.replace(".", "_"), LANGS[i], mBART_LANGS[i], LANGS[i], batch_size, beam, checkpoint,
+            checkpoint_name, min_len, max_len)
 
     print(cmds)
     with open(output, "w", encoding="utf-8") as w:
         w.write(cmds)
+
 
 if __name__ == "__main__":
     args = parse_args()
     create_yaml(args.transformer_checkpoint, args.transformer_output)
     create_yaml(args.mBART_checkpoint, args.mBART_output)
     create_yaml(args.our_checkpoint, args.our_output)
-
-
-
-
-

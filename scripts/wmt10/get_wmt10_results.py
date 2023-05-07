@@ -5,14 +5,20 @@ import os
 from collections import OrderedDict
 
 TOTAL_DIRECTION = 30
+
+
 def mapping(languages: str) -> dict:
     return dict(
         tuple(pair.split(":"))
         for pair in languages.strip().replace("\n", "").split(",")
     )
-LANGS="fr cs de fi lv et ro hi tr gu".split()
-HIGH_LANGS="fr cs de fi lv et".split()
-LOW_LANGS="ro hi tr gu"
+
+
+LANGS = "fr cs de fi lv et ro hi tr gu".split()
+HIGH_LANGS = "fr cs de fi lv et".split()
+LOW_LANGS = "ro hi tr gu"
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--log', '-log', type=str,
@@ -23,7 +29,7 @@ def parse_args():
     return args
 
 
-def create_excel(results, name, save_dir = '/home/v-jiaya/SharedTask/SmallTask1_ExcelResults/'):
+def create_excel(results, name, save_dir='/home/v-jiaya/SharedTask/SmallTask1_ExcelResults/'):
     workbook = xlwt.Workbook(encoding='utf-8')
     worksheet = workbook.add_sheet(name, cell_overwrite_ok=True)
     worksheet.write(1, 0, label="DeltaLM-Postnorm (Large)")
@@ -41,7 +47,6 @@ def create_excel(results, name, save_dir = '/home/v-jiaya/SharedTask/SmallTask1_
 
 def _lang_pair(src, tgt):
     return "{}->{}".format(src, tgt)
-
 
 
 def calculate_avg_score(x2x, src=None, tgt=None, model_name="m2m"):
@@ -83,6 +88,7 @@ def calculate_avg_score(x2x, src=None, tgt=None, model_name="m2m"):
         output = " & ".join(results) + " \\\\"
         print(output)
 
+
 def calculate_high_avg_score(x2x, src=None, tgt=None, model_name="m2m"):
     results = []
     if src == "x" and tgt == "y":
@@ -122,6 +128,7 @@ def calculate_high_avg_score(x2x, src=None, tgt=None, model_name="m2m"):
         results = [str(result) for result in results]
         output = " & ".join(results) + " \\\\"
         print(output)
+
 
 def calculate_low_avg_score(x2x, src=None, tgt=None, model_name="m2m"):
     results = []
@@ -177,7 +184,8 @@ if __name__ == "__main__":
             with open(path, "r", encoding="utf-8") as r:
                 result_lines = r.readlines()
                 for i in range(len(result_lines) - 1, -1, -1):  # reversed search
-                    if checkpoint_name.replace("//", "/") in result_lines[i].strip().replace("//", "/").replace("MODEL: ", ""):
+                    if checkpoint_name.replace("//", "/") in result_lines[i].strip().replace("//", "/").replace(
+                            "MODEL: ", ""):
                         last_line = result_lines[i + 1]  # read the latest results
                         if 'BLEU+case.mixed' in last_line:
                             score = float(last_line.split()[2])
@@ -194,7 +202,8 @@ if __name__ == "__main__":
             with open(path, "r", encoding="utf-8") as r:
                 result_lines = r.readlines()
                 for i in range(len(result_lines) - 1, -1, -1):  # reversed search
-                    if checkpoint_name.replace("//", "/") in result_lines[i].strip().replace("//", "/").replace("MODEL: ", ""):
+                    if checkpoint_name.replace("//", "/") in result_lines[i].strip().replace("//", "/").replace(
+                            "MODEL: ", ""):
                         last_line = result_lines[i + 1]  # read the latest results
                         if 'BLEU+case.mixed' in last_line:
                             score = float(last_line.split()[2])
@@ -204,24 +213,16 @@ if __name__ == "__main__":
                         else:
                             print(os.path.join(args.log, "{}-{}.BLEU".format("en", src)))
 
-
     calculate_avg_score(x2x, src="en", model_name="our")
     calculate_avg_score(x2x, tgt="en", model_name="our")
-    #calculate_avg_score(x2x, model_name="our")
+    # calculate_avg_score(x2x, model_name="our")
 
-    #calculate_high_avg_score(x2x, src="en", model_name="our_high")
-    #calculate_high_avg_score(x2x, tgt="en", model_name="our_high")
-    #calculate_high_avg_score(x2x, model_name="our_high")
+    # calculate_high_avg_score(x2x, src="en", model_name="our_high")
+    # calculate_high_avg_score(x2x, tgt="en", model_name="our_high")
+    # calculate_high_avg_score(x2x, model_name="our_high")
 
-    #calculate_low_avg_score(x2x, src="en", model_name="our_low")
-    #calculate_low_avg_score(x2x, tgt="en", model_name="our_low")
-    #calculate_low_avg_score(x2x, model_name="our_low")
-    #name = "wmt10"
-    #create_excel(results, name=name)
-
-
-
-
-
-
-
+    # calculate_low_avg_score(x2x, src="en", model_name="our_low")
+    # calculate_low_avg_score(x2x, tgt="en", model_name="our_low")
+    # calculate_low_avg_score(x2x, model_name="our_low")
+    # name = "wmt10"
+    # create_excel(results, name=name)

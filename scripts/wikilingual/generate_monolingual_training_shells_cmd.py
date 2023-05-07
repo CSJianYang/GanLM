@@ -1,8 +1,10 @@
 import os
-LANGS="en es pt fr de ru it id nl ar vi zh th ja ko hi cs tr".split()
-mBART_LANGS="en_XX es_XX pt_XX fr_XX de_DE ru_RU it_IT id_ID nl_XX ar_AR vi_VN zh_CN th_TH ja_XX ko_KR hi_IN cs_CZ tr_TR".split()
-mBART_OUTPUT_DIR="/home/v-jiaya/mBART/mBART/shells/aml/multi-node/WikiLingual/8GPU/monolingual/mBART/"
-mono_OUTPUT_DIR="/home/v-jiaya/mBART/mBART/shells/aml/multi-node/WikiLingual/8GPU/monolingual/transformer/"
+
+
+LANGS = "en es pt fr de ru it id nl ar vi zh th ja ko hi cs tr".split()
+mBART_LANGS = "en_XX es_XX pt_XX fr_XX de_DE ru_RU it_IT id_ID nl_XX ar_AR vi_VN zh_CN th_TH ja_XX ko_KR hi_IN cs_CZ tr_TR".split()
+mBART_OUTPUT_DIR = "/home/v-jiaya/mBART/mBART/shells/aml/multi-node/WikiLingual/8GPU/monolingual/mBART/"
+mono_OUTPUT_DIR = "/home/v-jiaya/mBART/mBART/shells/aml/multi-node/WikiLingual/8GPU/monolingual/transformer/"
 for i in range(len(LANGS)):
     cmds = """TEXT=/mnt/input/mBART/WikiLingual/download-split/data-bin-mBART/
 MODEL=/mnt/input/mBART/WikiLingual/download-split/model/monolingual/mBART/%s/
@@ -49,12 +51,12 @@ python train.py $TEXT \\
     --share-all-embeddings --max-source-positions 1024 --max-target-positions 1024 --criterion label_smoothed_cross_entropy --label-smoothing 0.1 \\
     --optimizer adam --adam-betas '(0.9, 0.98)' --lr-scheduler inverse_sqrt --lr 5e-5 --warmup-init-lr 1e-07 --stop-min-lr 1e-09 --warmup-updates 4000 \\
     --max-update 400000 --max-epoch 15 --weight-decay 0.0 --max-tokens 1536 --update-freq 1 \\
-    --seed 1 --log-format simple --skip-invalid-size-inputs-valid-test --fp16 --ddp-backend=no_c10d 2>&1 | tee -a $MODEL/train.log""" % (LANGS[i], mBART_LANGS[i], mBART_LANGS[i])
+    --seed 1 --log-format simple --skip-invalid-size-inputs-valid-test --fp16 --ddp-backend=no_c10d 2>&1 | tee -a $MODEL/train.log""" % (
+    LANGS[i], mBART_LANGS[i], mBART_LANGS[i])
     with open(os.path.join(mono_OUTPUT_DIR, "train_mono_{}.sh".format(LANGS[i])), "w") as w:
         w.write(cmds)
 
-
-heads="""#docker's key: /r9XLj/sS40pDvIvzamSeWZHApMhEc1r
+heads = """#docker's key: /r9XLj/sS40pDvIvzamSeWZHApMhEc1r
 description: mBART
 
 target:
@@ -98,10 +100,9 @@ for i in range(len(LANGS)):
   sku_count: 1
   command:
      - bash ./shells/aml/multi-node/WikiLingual/8GPU/monolingual/mono/train_mono_%s.sh""" % (LANGS[i], LANGS[i])
-mono_train_scripts= "/home/v-jiaya/mBART/mBART/submit_train_wikilingual_monolingual_mono.yaml"
+mono_train_scripts = "/home/v-jiaya/mBART/mBART/submit_train_wikilingual_monolingual_mono.yaml"
 with open(mono_train_scripts, "w", encoding="utf-8") as w:
     w.write(cmds)
-
 
 cmds = heads
 for i in range(len(LANGS)):

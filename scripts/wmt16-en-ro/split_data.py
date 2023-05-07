@@ -10,6 +10,8 @@ from fairseq.data import Dictionary, data_utils, indexed_dataset
 import numpy as np
 import linecache
 import os
+
+
 def get_parser():
     parser = argparse.ArgumentParser(
         description="writes text from binarized file to stdout"
@@ -17,11 +19,14 @@ def get_parser():
     # fmt: off
     parser.add_argument('--dataset-impl', help='dataset implementation',
                         choices=indexed_dataset.get_available_dataset_impl())
-    parser.add_argument('--dict', metavar='FP', default="/home/v-jiaya/unilm-moe/data/wmt16-en-ro/data-bin/dict.en.txt", help='dictionary containing known words')
-    parser.add_argument('--input', metavar='FP', default="/home/v-jiaya/unilm-moe/data/wmt16-en-ro/train/", help='binarized file to read')
+    parser.add_argument('--dict', metavar='FP', default="/home/v-jiaya/unilm-moe/data/wmt16-en-ro/data-bin/dict.en.txt",
+                        help='dictionary containing known words')
+    parser.add_argument('--input', metavar='FP', default="/home/v-jiaya/unilm-moe/data/wmt16-en-ro/train/",
+                        help='binarized file to read')
     parser.add_argument('--src', default="en", help='')
     parser.add_argument('--tgt', default="ro", help='')
-    parser.add_argument('--output', metavar='FP', default="/home/v-jiaya/unilm-moe/data/wmt16-en-ro/ablation/", help='binarized file to read')
+    parser.add_argument('--output', metavar='FP', default="/home/v-jiaya/unilm-moe/data/wmt16-en-ro/ablation/",
+                        help='binarized file to read')
     # fmt: on
 
     return parser
@@ -44,10 +49,6 @@ def main():
                 for line in output_lines:
                     w.write(line)
             print(f"Successfully Saving to {output_file}: {len(output_lines)}")
-
-
-
-
 
 
 if __name__ == "__main__":

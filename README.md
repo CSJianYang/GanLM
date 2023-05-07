@@ -43,6 +43,16 @@ bash finetune_generartion.sh
 bash finetune_understanding.sh
 ```
 
+## Model Checkpoints
+
+Download the trained checkpoints from [Google Drive](https://drive.google.com/drive/folders/14cf_jLm7Bwz7tb7fd2ZI-SWvdzfQ9aoS?usp=sharing)
+
+* `model_checkpoint/model_base_en.pt`: GanLM-base-English
+* `model_checkpoint/model_base_multilingual.pt`: GanLM-base-Multilingual
+* `model_checkpoint/model_base_multilingual_ft100lang.pt`: GanLM-base-Multilingual + Finetune on 100 languages
+* `model_checkpoint/model_large_en.pt`: GanLM-large-English
+* `model_checkpoint/model_large_multilingual.pt`: GanLM-large-Multilingual
+
 ## License
 
 GanLM is [MIT-licensed](./LICENSE).

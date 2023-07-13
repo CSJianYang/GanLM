@@ -7,7 +7,7 @@ both language generation and understanding tasks.
 
 * **Paper**:
   * arXiv: https://arxiv.org/abs/2212.10218
-  * [ACL 2023](https://2023.aclweb.org/): Accepted at the main conference; to be published in July 2023
+  * ACL 2023: https://aclanthology.org/2023.acl-long.522/
 * **Abstract**:
 
 ```text
@@ -89,11 +89,25 @@ GanLM is [MIT-licensed](./LICENSE).
 Please cite as:
 
 ```bibtex
-@article{GanLM,
-  title={GanLM: Encoder-Decoder Pre-training with an Auxiliary Discriminator},
-  author={Yang, Jian and Ma, Shuming and Dong, Li and Huang, Shaohan and Huang, Haoyang and 
-    Yin, Yuwei and Zhang, Dongdong and Yang, Liqun and Li, Zhoujun and Wei, Furu},
-  journal={arXiv preprint arXiv:2212.10218},
-  year={2022}
+@inproceedings{GanLM,
+    title = "{G}an{LM}: Encoder-Decoder Pre-training with an Auxiliary Discriminator",
+    author = "Yang, Jian  and
+      Ma, Shuming  and
+      Dong, Li  and
+      Huang, Shaohan  and
+      Huang, Haoyang  and
+      Yin, Yuwei  and
+      Zhang, Dongdong  and
+      Yang, Liqun  and
+      Wei, Furu  and
+      Li, Zhoujun",
+    booktitle = "Proceedings of the 61st Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)",
+    month = jul,
+    year = "2023",
+    address = "Toronto, Canada",
+    publisher = "Association for Computational Linguistics",
+    url = "https://aclanthology.org/2023.acl-long.522",
+    pages = "9394--9412",
 }
+
 ```
